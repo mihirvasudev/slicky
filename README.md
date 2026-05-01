@@ -51,16 +51,26 @@ Six intent-specific rewrite templates live in `Slicky.app/Contents/Resources/Tem
 - No data is sent to any server except Anthropic's API
 - No analytics, no telemetry, no account required
 
-## Building from source
+## Building
 
+**You don't need Xcode locally.** GitHub Actions builds and notarizes for you.
+
+```bash
+# Get an unsigned build right now (no secrets needed):
+# Push to GitHub → Actions → Build Slicky → Run workflow → download artifact
+# Then:
+xattr -cr Slicky.app && open Slicky.app
+```
+
+For signed `.dmg` releases see [BUILDING.md](BUILDING.md).
+
+If you do have Xcode locally:
 ```bash
 git clone https://github.com/mihir/slicky
 cd slicky
 xcodegen generate
 open Slicky.xcodeproj
 ```
-
-Requires Xcode 14+, macOS 12+.
 
 ## Hotkey conflict with Slack
 
