@@ -19,7 +19,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Show Xcode version
         run: |
@@ -28,11 +28,13 @@ jobs:
 
       - name: Install xcodegen
         run: |
+          set -euo pipefail
           curl -fsSL -o /tmp/xcodegen.zip \
             "https://github.com/yonaskolb/XcodeGen/releases/download/2.45.0/xcodegen.artifactbundle.zip"
           unzip -q -o /tmp/xcodegen.zip -d /tmp/xcodegen_bundle
-          # The bundle layout: xcodegen.artifactbundle/<name>/bin/xcodegen
           XCODEGEN_BIN=$(find /tmp/xcodegen_bundle -name "xcodegen" -type f | head -1)
+          echo "Found xcodegen at: $XCODEGEN_BIN"
+          file "$XCODEGEN_BIN"
           sudo cp "$XCODEGEN_BIN" /usr/local/bin/xcodegen
           sudo chmod +x /usr/local/bin/xcodegen
           xcodegen --version
@@ -42,6 +44,7 @@ jobs:
 
       - name: Resolve SPM packages
         run: |
+          set -euo pipefail
           xcodebuild -resolvePackageDependencies \
             -project Slicky.xcodeproj \
             -scheme Slicky \
@@ -49,6 +52,7 @@ jobs:
 
       - name: Build (Debug, unsigned)
         run: |
+          set -euo pipefail
           xcodebuild \
             -project Slicky.xcodeproj \
             -scheme Slicky \
@@ -58,13 +62,21 @@ jobs:
             -destination "platform=macOS" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGN_IDENTITY="" \
-            | xcpretty || true
-          # Confirm the .app exists even if xcpretty exits non-zero
-          ls "$RUNNER_TEMP/DerivedData/Build/Products/Debug/"
+            CODE_SIGNING_REQUIRED=NO
+
+      - name: Verify build output
+        run: |
+          APP=$(find "$RUNNER_TEMP/DerivedData" -name "Slicky.app" -type d | head -1)
+          if [ -z "$APP" ]; then
+            echo "ERROR: Slicky.app not found in DerivedData"
+            find "$RUNNER_TEMP/DerivedData" -maxdepth 4 -type d || true
+            exit 1
+          fi
+          echo "Build succeeded: $APP"
 
       - name: Package as zip
         run: |
-          APP=$(find "$RUNNER_TEMP/DerivedData/Build/Products/Debug/" -name "Slicky.app" | head -1)
+          APP=$(find "$RUNNER_TEMP/DerivedData" -name "Slicky.app" -type d | head -1)
           echo "Packaging $APP"
           ditto -c -k --keepParent "$APP" "$RUNNER_TEMP/Slicky-unsigned.zip"
 
@@ -87,13 +99,14 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Show Xcode version
         run: xcodebuild -version
 
       - name: Install xcodegen
         run: |
+          set -euo pipefail
           curl -fsSL -o /tmp/xcodegen.zip \
             "https://github.com/yonaskolb/XcodeGen/releases/download/2.45.0/xcodegen.artifactbundle.zip"
           unzip -q -o /tmp/xcodegen.zip -d /tmp/xcodegen_bundle
@@ -110,6 +123,7 @@ jobs:
           DEVELOPER_ID_P12_PASSWORD: ${{ secrets.DEVELOPER_ID_P12_PASSWORD }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
         run: |
+          set -euo pipefail
           echo "$DEVELOPER_ID_P12" | base64 --decode > /tmp/certificate.p12
 
           security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
@@ -133,6 +147,7 @@ jobs:
 
       - name: Resolve SPM packages
         run: |
+          set -euo pipefail
           xcodebuild -resolvePackageDependencies \
             -project Slicky.xcodeproj \
             -scheme Slicky \
@@ -142,6 +157,7 @@ jobs:
         env:
           TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
+          set -euo pipefail
           xcodebuild \
             -project Slicky.xcodeproj \
             -scheme Slicky \
@@ -152,19 +168,17 @@ jobs:
             DEVELOPMENT_TEAM="$TEAM_ID" \
             CODE_SIGN_IDENTITY="Developer ID Application" \
             CODE_SIGN_STYLE=Manual \
-            OTHER_CODE_SIGN_FLAGS="--timestamp" \
-            | xcpretty || true
-          ls "$RUNNER_TEMP/DerivedData/Build/Products/Release/"
+            OTHER_CODE_SIGN_FLAGS="--timestamp"
 
       - name: Verify signature
         run: |
-          APP=$(find "$RUNNER_TEMP/DerivedData/Build/Products/Release/" -name "Slicky.app" | head -1)
+          APP=$(find "$RUNNER_TEMP/DerivedData" -name "Slicky.app" -type d | head -1)
           codesign --verify --deep --strict --verbose=2 "$APP"
           spctl --assess --type exec --verbose "$APP" || true
 
       - name: Create DMG
         run: |
-          APP=$(find "$RUNNER_TEMP/DerivedData/Build/Products/Release/" -name "Slicky.app" | head -1)
+          APP=$(find "$RUNNER_TEMP/DerivedData" -name "Slicky.app" -type d | head -1)
           mkdir -p /tmp/dmg-staging
           cp -R "$APP" /tmp/dmg-staging/
           ln -s /Applications /tmp/dmg-staging/Applications
