@@ -1,0 +1,416 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0BBD173CCF10F470B2A07688 /* RewriteEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = E426BEC8DD542EC5D775DA04 /* RewriteEvent.swift */; };
+		0CB15FB05213E06FCF664E04 /* HUDView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C19B57D230C44EEAD0E51616 /* HUDView.swift */; };
+		12CA8821B2338734F4D53111 /* AnthropicClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F8CC22BE8F2CFFDE1D39B8D /* AnthropicClient.swift */; };
+		1D2425F4F7BDA24F014F5966 /* AppDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81A4C4280FB9333398191E52 /* AppDetector.swift */; };
+		26E14CFA1AB9725D13C0D0DB /* LLMRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB6BEC38D689B8BC2F69B592 /* LLMRequest.swift */; };
+		39E2222E60526A97E317AD55 /* AgenticRewriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05EC67465A778A7B387684AC /* AgenticRewriter.swift */; };
+		3A2F06BF16FB36DBBD46A6E4 /* AXContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED1EC9BBA2E991D60F933BA2 /* AXContext.swift */; };
+		40CD2E519966A17E86EACAF1 /* TextInjector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 195A0A5BE0E7A4F84B41CEEB /* TextInjector.swift */; };
+		44692F2169D5714F231171B8 /* writing.md in Resources */ = {isa = PBXBuildFile; fileRef = 13A4789BD653723ACFC09EF8 /* writing.md */; };
+		4D4944B484D2264949168FF0 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9F4DBBB1E6A96F2BEA2D420B /* Assets.xcassets */; };
+		52A3E2C4301F2C22C0CB1219 /* general.md in Resources */ = {isa = PBXBuildFile; fileRef = 8ED4AEB7B1AF2651890FC2E2 /* general.md */; };
+		68F68247D2169C4D1F6216BE /* HUDWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BE50F5C5D30E5311C89E4E2 /* HUDWindowController.swift */; };
+		7508DA90FA632DFF87B39481 /* MenuBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B691FA8B2DA0D77E7288505 /* MenuBarController.swift */; };
+		86D4BE4D71B3C5C481FA0A12 /* KeychainManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFB128833643CF1515363FF2 /* KeychainManager.swift */; };
+		87860FA436ECC4AC8B2310E8 /* coding-refactor.md in Resources */ = {isa = PBXBuildFile; fileRef = ADECC14442508B0BC388F544 /* coding-refactor.md */; };
+		87FD07201186B1FA7C94AD54 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CBDE8F4D8B9ED73FD3C6EBE /* SettingsView.swift */; };
+		933EF6925B9327AFF06539BF /* HUDViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65A6C4E73720021DC9A251DD /* HUDViewModel.swift */; };
+		9B872C509581F6F8FE6BB20C /* SlickyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00EA057131FC0D98D35ECE90 /* SlickyApp.swift */; };
+		A5D0CAC1523BF58B85AFBA11 /* IntentClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0EA0F7100493D4AAA40A4DA /* IntentClassifier.swift */; };
+		A75AC4DA142BB6B77A4C7834 /* HotKey in Frameworks */ = {isa = PBXBuildFile; productRef = 38177BC1E339DF073CCBF6F2 /* HotKey */; };
+		ABFF188C987AC5FBBCBDBBD6 /* HotkeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 671F921A8C5CB49CEBD07C90 /* HotkeyManager.swift */; };
+		B3909E0BD8F85FEC3BC890C8 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5247AD0BBC904BA422236085 /* OnboardingView.swift */; };
+		B5142EA50DF2AB3A56F397B3 /* SSEStream.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC4878A0BA97677BD409297 /* SSEStream.swift */; };
+		B5A39ABB8096A5497D9EFE92 /* coding-feature.md in Resources */ = {isa = PBXBuildFile; fileRef = B597DB84427F654428ECA528 /* coding-feature.md */; };
+		B83E6B95C5254DF980621B9C /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F330C8A16B81B2ABE421C403 /* AppDelegate.swift */; };
+		B94FA9A2D036CDEFE76E8D0E /* system.md in Resources */ = {isa = PBXBuildFile; fileRef = 6AC2AAF464D1883B77F1EF53 /* system.md */; };
+		E2F947B5F6C4EFF6E68F1CE2 /* research.md in Resources */ = {isa = PBXBuildFile; fileRef = 833CFB8B89C6428614521B47 /* research.md */; };
+		E4AD485DB54B91A0DB34A355 /* coding-bug.md in Resources */ = {isa = PBXBuildFile; fileRef = BB46EC8696A3CC8BC720FBB9 /* coding-bug.md */; };
+		F35EB93F9FEC8C527BA5F93F /* ClipboardCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE385C42F6CFDEDBFF59442B /* ClipboardCapture.swift */; };
+		F9F790C3017CA4D9406EF532 /* SlickySettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = E44541801AB4ED1AB8BBC44E /* SlickySettings.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		00EA057131FC0D98D35ECE90 /* SlickyApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlickyApp.swift; sourceTree = "<group>"; };
+		05EC67465A778A7B387684AC /* AgenticRewriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgenticRewriter.swift; sourceTree = "<group>"; };
+		0CBDE8F4D8B9ED73FD3C6EBE /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		0DC4878A0BA97677BD409297 /* SSEStream.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSEStream.swift; sourceTree = "<group>"; };
+		13A4789BD653723ACFC09EF8 /* writing.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = writing.md; sourceTree = "<group>"; };
+		195A0A5BE0E7A4F84B41CEEB /* TextInjector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextInjector.swift; sourceTree = "<group>"; };
+		2B691FA8B2DA0D77E7288505 /* MenuBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarController.swift; sourceTree = "<group>"; };
+		5247AD0BBC904BA422236085 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		5BE50F5C5D30E5311C89E4E2 /* HUDWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HUDWindowController.swift; sourceTree = "<group>"; };
+		5F8CC22BE8F2CFFDE1D39B8D /* AnthropicClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnthropicClient.swift; sourceTree = "<group>"; };
+		65A6C4E73720021DC9A251DD /* HUDViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HUDViewModel.swift; sourceTree = "<group>"; };
+		671F921A8C5CB49CEBD07C90 /* HotkeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyManager.swift; sourceTree = "<group>"; };
+		6AC2AAF464D1883B77F1EF53 /* system.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = system.md; sourceTree = "<group>"; };
+		75AD9C4CACDBAAFAA43CEE1B /* Slicky.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Slicky.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		81A4C4280FB9333398191E52 /* AppDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDetector.swift; sourceTree = "<group>"; };
+		833CFB8B89C6428614521B47 /* research.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = research.md; sourceTree = "<group>"; };
+		8ED4AEB7B1AF2651890FC2E2 /* general.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = general.md; sourceTree = "<group>"; };
+		9F4DBBB1E6A96F2BEA2D420B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		ADECC14442508B0BC388F544 /* coding-refactor.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "coding-refactor.md"; sourceTree = "<group>"; };
+		B122EC6BE2E1FBC40428BA75 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		B597DB84427F654428ECA528 /* coding-feature.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "coding-feature.md"; sourceTree = "<group>"; };
+		BB46EC8696A3CC8BC720FBB9 /* coding-bug.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "coding-bug.md"; sourceTree = "<group>"; };
+		BE385C42F6CFDEDBFF59442B /* ClipboardCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardCapture.swift; sourceTree = "<group>"; };
+		BFB128833643CF1515363FF2 /* KeychainManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainManager.swift; sourceTree = "<group>"; };
+		C19B57D230C44EEAD0E51616 /* HUDView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HUDView.swift; sourceTree = "<group>"; };
+		DB6BEC38D689B8BC2F69B592 /* LLMRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMRequest.swift; sourceTree = "<group>"; };
+		E426BEC8DD542EC5D775DA04 /* RewriteEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RewriteEvent.swift; sourceTree = "<group>"; };
+		E44541801AB4ED1AB8BBC44E /* SlickySettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlickySettings.swift; sourceTree = "<group>"; };
+		ED1EC9BBA2E991D60F933BA2 /* AXContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AXContext.swift; sourceTree = "<group>"; };
+		F0EA0F7100493D4AAA40A4DA /* IntentClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntentClassifier.swift; sourceTree = "<group>"; };
+		F330C8A16B81B2ABE421C403 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		E02AB1733CE46180C9E848D6 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A75AC4DA142BB6B77A4C7834 /* HotKey in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		05878DCE47896437DAB6BDF9 /* LLM */ = {
+			isa = PBXGroup;
+			children = (
+				5F8CC22BE8F2CFFDE1D39B8D /* AnthropicClient.swift */,
+				DB6BEC38D689B8BC2F69B592 /* LLMRequest.swift */,
+				0DC4878A0BA97677BD409297 /* SSEStream.swift */,
+			);
+			path = LLM;
+			sourceTree = "<group>";
+		};
+		0CD6F193195B01C27C3EC425 /* Templates */ = {
+			isa = PBXGroup;
+			children = (
+				BB46EC8696A3CC8BC720FBB9 /* coding-bug.md */,
+				B597DB84427F654428ECA528 /* coding-feature.md */,
+				ADECC14442508B0BC388F544 /* coding-refactor.md */,
+				8ED4AEB7B1AF2651890FC2E2 /* general.md */,
+				833CFB8B89C6428614521B47 /* research.md */,
+				6AC2AAF464D1883B77F1EF53 /* system.md */,
+				13A4789BD653723ACFC09EF8 /* writing.md */,
+			);
+			path = Templates;
+			sourceTree = "<group>";
+		};
+		316C0150E4238F91CD937787 /* Capture */ = {
+			isa = PBXGroup;
+			children = (
+				81A4C4280FB9333398191E52 /* AppDetector.swift */,
+				ED1EC9BBA2E991D60F933BA2 /* AXContext.swift */,
+				BE385C42F6CFDEDBFF59442B /* ClipboardCapture.swift */,
+			);
+			path = Capture;
+			sourceTree = "<group>";
+		};
+		348FC6D205E847B033EAEA35 = {
+			isa = PBXGroup;
+			children = (
+				61DB8C4FA13F69E166A4B9E0 /* Slicky */,
+				C76506AB6DBF9C4590D0663D /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		47055288094DED32393A8937 /* Hotkey */ = {
+			isa = PBXGroup;
+			children = (
+				671F921A8C5CB49CEBD07C90 /* HotkeyManager.swift */,
+			);
+			path = Hotkey;
+			sourceTree = "<group>";
+		};
+		61DB8C4FA13F69E166A4B9E0 /* Slicky */ = {
+			isa = PBXGroup;
+			children = (
+				B122EC6BE2E1FBC40428BA75 /* Info.plist */,
+				C74EB1B89F3AD7F68EB5863C /* App */,
+				316C0150E4238F91CD937787 /* Capture */,
+				47055288094DED32393A8937 /* Hotkey */,
+				D1135AE1C2092A1AF60EDBD0 /* Inject */,
+				05878DCE47896437DAB6BDF9 /* LLM */,
+				F202F3D8AD8F114188ECBB6D /* Pipeline */,
+				B02812B92FCF87D1B651D738 /* Resources */,
+				BC95EB90FE27F562F8A635B5 /* Storage */,
+				C536EC07BBC9011645D8C360 /* UI */,
+			);
+			path = Slicky;
+			sourceTree = "<group>";
+		};
+		B02812B92FCF87D1B651D738 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				9F4DBBB1E6A96F2BEA2D420B /* Assets.xcassets */,
+				0CD6F193195B01C27C3EC425 /* Templates */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		BC95EB90FE27F562F8A635B5 /* Storage */ = {
+			isa = PBXGroup;
+			children = (
+				BFB128833643CF1515363FF2 /* KeychainManager.swift */,
+				E44541801AB4ED1AB8BBC44E /* SlickySettings.swift */,
+			);
+			path = Storage;
+			sourceTree = "<group>";
+		};
+		C536EC07BBC9011645D8C360 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				C19B57D230C44EEAD0E51616 /* HUDView.swift */,
+				65A6C4E73720021DC9A251DD /* HUDViewModel.swift */,
+				5BE50F5C5D30E5311C89E4E2 /* HUDWindowController.swift */,
+				5247AD0BBC904BA422236085 /* OnboardingView.swift */,
+				0CBDE8F4D8B9ED73FD3C6EBE /* SettingsView.swift */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		C74EB1B89F3AD7F68EB5863C /* App */ = {
+			isa = PBXGroup;
+			children = (
+				F330C8A16B81B2ABE421C403 /* AppDelegate.swift */,
+				2B691FA8B2DA0D77E7288505 /* MenuBarController.swift */,
+				00EA057131FC0D98D35ECE90 /* SlickyApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		C76506AB6DBF9C4590D0663D /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				75AD9C4CACDBAAFAA43CEE1B /* Slicky.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		D1135AE1C2092A1AF60EDBD0 /* Inject */ = {
+			isa = PBXGroup;
+			children = (
+				195A0A5BE0E7A4F84B41CEEB /* TextInjector.swift */,
+			);
+			path = Inject;
+			sourceTree = "<group>";
+		};
+		F202F3D8AD8F114188ECBB6D /* Pipeline */ = {
+			isa = PBXGroup;
+			children = (
+				05EC67465A778A7B387684AC /* AgenticRewriter.swift */,
+				F0EA0F7100493D4AAA40A4DA /* IntentClassifier.swift */,
+				E426BEC8DD542EC5D775DA04 /* RewriteEvent.swift */,
+			);
+			path = Pipeline;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		D222B908EAA613A6E297C8C9 /* Slicky */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 451551AE7B1519E82E97F870 /* Build configuration list for PBXNativeTarget "Slicky" */;
+			buildPhases = (
+				47503D253E347FEAA3B7B9C1 /* Sources */,
+				1F1857488FD7ECB95A886B30 /* Resources */,
+				E02AB1733CE46180C9E848D6 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Slicky;
+			packageProductDependencies = (
+				38177BC1E339DF073CCBF6F2 /* HotKey */,
+			);
+			productName = Slicky;
+			productReference = 75AD9C4CACDBAAFAA43CEE1B /* Slicky.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		DAFDB2D4E03F802360D15175 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1420;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = B57DF70172D9F05E9D5AAC0E /* Build configuration list for PBXProject "Slicky" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 348FC6D205E847B033EAEA35;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				30BF43DF23C1C2F37B346C87 /* XCRemoteSwiftPackageReference "HotKey" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = C76506AB6DBF9C4590D0663D /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				D222B908EAA613A6E297C8C9 /* Slicky */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		1F1857488FD7ECB95A886B30 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4D4944B484D2264949168FF0 /* Assets.xcassets in Resources */,
+				E4AD485DB54B91A0DB34A355 /* coding-bug.md in Resources */,
+				B5A39ABB8096A5497D9EFE92 /* coding-feature.md in Resources */,
+				87860FA436ECC4AC8B2310E8 /* coding-refactor.md in Resources */,
+				52A3E2C4301F2C22C0CB1219 /* general.md in Resources */,
+				E2F947B5F6C4EFF6E68F1CE2 /* research.md in Resources */,
+				B94FA9A2D036CDEFE76E8D0E /* system.md in Resources */,
+				44692F2169D5714F231171B8 /* writing.md in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		47503D253E347FEAA3B7B9C1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3A2F06BF16FB36DBBD46A6E4 /* AXContext.swift in Sources */,
+				39E2222E60526A97E317AD55 /* AgenticRewriter.swift in Sources */,
+				12CA8821B2338734F4D53111 /* AnthropicClient.swift in Sources */,
+				B83E6B95C5254DF980621B9C /* AppDelegate.swift in Sources */,
+				1D2425F4F7BDA24F014F5966 /* AppDetector.swift in Sources */,
+				F35EB93F9FEC8C527BA5F93F /* ClipboardCapture.swift in Sources */,
+				0CB15FB05213E06FCF664E04 /* HUDView.swift in Sources */,
+				933EF6925B9327AFF06539BF /* HUDViewModel.swift in Sources */,
+				68F68247D2169C4D1F6216BE /* HUDWindowController.swift in Sources */,
+				ABFF188C987AC5FBBCBDBBD6 /* HotkeyManager.swift in Sources */,
+				A5D0CAC1523BF58B85AFBA11 /* IntentClassifier.swift in Sources */,
+				86D4BE4D71B3C5C481FA0A12 /* KeychainManager.swift in Sources */,
+				26E14CFA1AB9725D13C0D0DB /* LLMRequest.swift in Sources */,
+				7508DA90FA632DFF87B39481 /* MenuBarController.swift in Sources */,
+				B3909E0BD8F85FEC3BC890C8 /* OnboardingView.swift in Sources */,
+				0BBD173CCF10F470B2A07688 /* RewriteEvent.swift in Sources */,
+				B5142EA50DF2AB3A56F397B3 /* SSEStream.swift in Sources */,
+				87FD07201186B1FA7C94AD54 /* SettingsView.swift in Sources */,
+				9B872C509581F6F8FE6BB20C /* SlickyApp.swift in Sources */,
+				F9F790C3017CA4D9406EF532 /* SlickySettings.swift in Sources */,
+				40CD2E519966A17E86EACAF1 /* TextInjector.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		322B2C3E83E6B86E38E01720 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		D51C055936F3F5A23702169B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_IDENTITY = "-";
+				ENABLE_HARDENED_RUNTIME = NO;
+				INFOPLIST_FILE = Slicky/Info.plist;
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mihir.slicky;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.7;
+			};
+			name = Release;
+		};
+		E5110E53C1574674B5A4B982 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		F0A996A62DF3543328B2829E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_IDENTITY = "-";
+				ENABLE_HARDENED_RUNTIME = NO;
+				INFOPLIST_FILE = Slicky/Info.plist;
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mihir.slicky;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.7;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		451551AE7B1519E82E97F870 /* Build configuration list for PBXNativeTarget "Slicky" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F0A996A62DF3543328B2829E /* Debug */,
+				D51C055936F3F5A23702169B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		B57DF70172D9F05E9D5AAC0E /* Build configuration list for PBXProject "Slicky" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E5110E53C1574674B5A4B982 /* Debug */,
+				322B2C3E83E6B86E38E01720 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		30BF43DF23C1C2F37B346C87 /* XCRemoteSwiftPackageReference "HotKey" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/soffes/HotKey";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.2.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		38177BC1E339DF073CCBF6F2 /* HotKey */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 30BF43DF23C1C2F37B346C87 /* XCRemoteSwiftPackageReference "HotKey" */;
+			productName = HotKey;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = DAFDB2D4E03F802360D15175 /* Project object */;
+}

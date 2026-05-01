@@ -1,0 +1,44 @@
+name: Slicky
+options:
+  bundleIdPrefix: com.mihir
+  deploymentTarget:
+    macOS: "12.0"
+  createIntermediateGroups: true
+  xcodeVersion: "14.2"
+
+packages:
+  HotKey:
+    url: https://github.com/soffes/HotKey
+    from: 0.2.0
+
+targets:
+  Slicky:
+    type: application
+    platform: macOS
+    deploymentTarget: "12.0"
+    sources:
+      - path: Slicky
+    info:
+      path: Slicky/Info.plist
+      properties:
+        CFBundleName: Slicky
+        CFBundleIdentifier: com.mihir.slicky
+        CFBundleVersion: "1"
+        CFBundleShortVersionString: "1.0.0"
+        CFBundleIconFile: AppIcon
+        LSUIElement: true
+        NSPrincipalClass: NSApplication
+        NSAccessibilityUsageDescription: "Slicky reads your selected text to rewrite your prompt, and pastes the result back."
+        NSAppleEventsUsageDescription: "Slicky uses Apple Events to interact with other applications when pasting."
+    dependencies:
+      - package: HotKey
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mihir.slicky
+        MACOSX_DEPLOYMENT_TARGET: "12.0"
+        SWIFT_VERSION: "5.7"
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGNING_REQUIRED: "NO"
+        CODE_SIGNING_ALLOWED: "NO"
+        ENABLE_HARDENED_RUNTIME: "NO"
+        SWIFT_OPTIMIZATION_LEVEL: "-Onone"
