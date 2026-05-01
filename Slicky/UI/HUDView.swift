@@ -195,7 +195,7 @@ struct HUDView: View {
                 if viewModel.isDone && !viewModel.isEditing {
                     Text("Tab to edit")
                         .font(.caption2)
-                        .foregroundColor(.tertiary)
+                        .foregroundColor(Color.secondary.opacity(0.7))
                 }
             }
 

@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 import Combine
 
-enum PipelineStage {
+enum PipelineStage: Equatable {
     case idle
     case classifying
     case drafting
@@ -10,6 +10,18 @@ enum PipelineStage {
     case refining
     case done
     case failed(Error)
+
+    static func == (lhs: PipelineStage, rhs: PipelineStage) -> Bool {
+        switch (lhs, rhs) {
+        case (.idle, .idle), (.classifying, .classifying), (.drafting, .drafting),
+             (.critiquing, .critiquing), (.refining, .refining), (.done, .done):
+            return true
+        case (.failed, .failed):
+            return true
+        default:
+            return false
+        }
+    }
 }
 
 @MainActor
@@ -89,7 +101,7 @@ final class HUDViewModel: ObservableObject {
     // MARK: - Keyboard monitor
 
     func installKeyMonitor(onAccept: @escaping () -> Void, onCancel: @escaping () -> Void) {
-        eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+        eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] (event: NSEvent) -> NSEvent? in
             guard let self = self else { return event }
             switch event.keyCode {
             case 36: // Return

@@ -30,25 +30,27 @@ final class HUDWindowController {
         let hostingView = NSHostingView(rootView: hudView)
         hostingView.frame = NSRect(x: 0, y: 0, width: 620, height: 580)
 
+        // .nonActivatingPanel was removed from macOS 15 SDK; we need activation anyway
+        // for the local key-event monitor to fire.
         let panel = NSPanel(
             contentRect: NSRect(x: 0, y: 0, width: 620, height: 580),
-            styleMask: [.titled, .closable, .fullSizeContentView, .nonActivatingPanel],
+            styleMask: [.titled, .closable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
         panel.titlebarAppearsTransparent = true
-        panel.titleVisibility = .hidden
+        panel.titleVisibility = NSWindow.TitleVisibility.hidden
         panel.isMovableByWindowBackground = true
-        panel.level = .floating
+        panel.level = NSWindow.Level.floating
         panel.isFloatingPanel = true
-        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        panel.collectionBehavior = NSWindow.CollectionBehavior([.canJoinAllSpaces, .fullScreenAuxiliary])
         panel.contentView = hostingView
         panel.center()
 
         // Hide traffic light buttons
-        panel.standardWindowButton(.closeButton)?.isHidden = true
-        panel.standardWindowButton(.miniaturizeButton)?.isHidden = true
-        panel.standardWindowButton(.zoomButton)?.isHidden = true
+        panel.standardWindowButton(NSWindow.ButtonType.closeButton)?.isHidden = true
+        panel.standardWindowButton(NSWindow.ButtonType.miniaturizeButton)?.isHidden = true
+        panel.standardWindowButton(NSWindow.ButtonType.zoomButton)?.isHidden = true
 
         self.window = panel
 
@@ -60,7 +62,7 @@ final class HUDWindowController {
 
         // Activate app so the panel receives key events
         NSApp.activate(ignoringOtherApps: true)
-        panel.makeKeyAndOrderFront(nil)
+        panel.makeKeyAndOrderFront(nil as AnyObject?)
 
         // Start the agentic pipeline
         vm.startRewrite(context: context, settings: settings)

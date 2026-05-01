@@ -31,7 +31,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func registerHotkey() {
         hotkeyManager?.register(key: settings.hotkeyKey, modifiers: settings.hotkeyModifiers) { [weak self] in
-            self?.hotkeyFired()
+            // hotkeyFired() is @MainActor; the HotKey callback is not, so hop to the main queue.
+            DispatchQueue.main.async { self?.hotkeyFired() }
         }
     }
 
