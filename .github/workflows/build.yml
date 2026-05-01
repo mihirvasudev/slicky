@@ -10,27 +10,32 @@ on:
 jobs:
   # ─────────────────────────────────────────────────────────────
   # Job 1: Build (runs on every push / PR – no secrets needed)
-  # Produces an unsigned .app you can download and run locally
-  # with:  xattr -cr Slicky.app && open Slicky.app
+  # Produces an unsigned Debug .app you can download and run with:
+  #   xattr -cr Slicky.app && open Slicky.app
   # ─────────────────────────────────────────────────────────────
   build:
-    name: Build (unsigned)
-    runs-on: macos-13
+    name: Build (unsigned Debug)
+    runs-on: macos-14
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Select Xcode 15
-        run: sudo xcode-select -s /Applications/Xcode_15.2.app
+      - name: Show Xcode version
+        run: |
+          xcodebuild -version
+          xcrun swift --version
 
       - name: Install xcodegen
         run: |
-          curl -L -o /tmp/xcodegen.zip \
+          curl -fsSL -o /tmp/xcodegen.zip \
             "https://github.com/yonaskolb/XcodeGen/releases/download/2.45.0/xcodegen.artifactbundle.zip"
-          unzip -o /tmp/xcodegen.zip -d /tmp/xcodegen_bundle
-          sudo cp /tmp/xcodegen_bundle/xcodegen.artifactbundle/xcodegen-2.45.0-macosx/bin/xcodegen \
-            /usr/local/bin/xcodegen
+          unzip -q -o /tmp/xcodegen.zip -d /tmp/xcodegen_bundle
+          # The bundle layout: xcodegen.artifactbundle/<name>/bin/xcodegen
+          XCODEGEN_BIN=$(find /tmp/xcodegen_bundle -name "xcodegen" -type f | head -1)
+          sudo cp "$XCODEGEN_BIN" /usr/local/bin/xcodegen
           sudo chmod +x /usr/local/bin/xcodegen
+          xcodegen --version
 
       - name: Generate Xcode project
         run: xcodegen generate
@@ -39,23 +44,28 @@ jobs:
         run: |
           xcodebuild -resolvePackageDependencies \
             -project Slicky.xcodeproj \
-            -scheme Slicky
+            -scheme Slicky \
+            -clonedSourcePackagesDirPath "$RUNNER_TEMP/spm"
 
-      - name: Build
+      - name: Build (Debug, unsigned)
         run: |
           xcodebuild \
             -project Slicky.xcodeproj \
             -scheme Slicky \
-            -configuration Release \
+            -configuration Debug \
             -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            -clonedSourcePackagesDirPath "$RUNNER_TEMP/spm" \
             -destination "platform=macOS" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGN_IDENTITY="" \
-            build
+            | xcpretty || true
+          # Confirm the .app exists even if xcpretty exits non-zero
+          ls "$RUNNER_TEMP/DerivedData/Build/Products/Debug/"
 
-      - name: Package .app as zip
+      - name: Package as zip
         run: |
-          APP="$RUNNER_TEMP/DerivedData/Build/Products/Release/Slicky.app"
+          APP=$(find "$RUNNER_TEMP/DerivedData/Build/Products/Debug/" -name "Slicky.app" | head -1)
+          echo "Packaging $APP"
           ditto -c -k --keepParent "$APP" "$RUNNER_TEMP/Slicky-unsigned.zip"
 
       - name: Upload unsigned build
@@ -67,29 +77,28 @@ jobs:
 
   # ─────────────────────────────────────────────────────────────
   # Job 2: Signed + notarized release (runs on version tags)
-  # Requires secrets – see README for setup instructions
+  # Requires secrets — see BUILDING.md for full setup guide
   # ─────────────────────────────────────────────────────────────
   release:
     name: Release (signed + notarized)
-    runs-on: macos-13
+    runs-on: macos-14
     if: startsWith(github.ref, 'refs/tags/v')
     needs: build
-    env:
-      KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Select Xcode 15
-        run: sudo xcode-select -s /Applications/Xcode_15.2.app
+      - name: Show Xcode version
+        run: xcodebuild -version
 
       - name: Install xcodegen
         run: |
-          curl -L -o /tmp/xcodegen.zip \
+          curl -fsSL -o /tmp/xcodegen.zip \
             "https://github.com/yonaskolb/XcodeGen/releases/download/2.45.0/xcodegen.artifactbundle.zip"
-          unzip -o /tmp/xcodegen.zip -d /tmp/xcodegen_bundle
-          sudo cp /tmp/xcodegen_bundle/xcodegen.artifactbundle/xcodegen-2.45.0-macosx/bin/xcodegen \
-            /usr/local/bin/xcodegen
+          unzip -q -o /tmp/xcodegen.zip -d /tmp/xcodegen_bundle
+          XCODEGEN_BIN=$(find /tmp/xcodegen_bundle -name "xcodegen" -type f | head -1)
+          sudo cp "$XCODEGEN_BIN" /usr/local/bin/xcodegen
           sudo chmod +x /usr/local/bin/xcodegen
 
       - name: Generate Xcode project
@@ -99,35 +108,35 @@ jobs:
         env:
           DEVELOPER_ID_P12: ${{ secrets.DEVELOPER_ID_P12 }}
           DEVELOPER_ID_P12_PASSWORD: ${{ secrets.DEVELOPER_ID_P12_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
         run: |
-          # Write the .p12 from the base64 secret
           echo "$DEVELOPER_ID_P12" | base64 --decode > /tmp/certificate.p12
 
-          # Create a temporary keychain so we don't touch the login keychain
           security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
           security default-keychain -s build.keychain
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
           security set-keychain-settings -t 3600 -u build.keychain
 
-          # Import the certificate
           security import /tmp/certificate.p12 \
             -k build.keychain \
             -P "$DEVELOPER_ID_P12_PASSWORD" \
             -T /usr/bin/codesign \
             -T /usr/bin/security
 
-          # Allow codesign to access the keychain without UI prompts
           security set-key-partition-list \
             -S apple-tool:,apple:,codesign: \
             -s -k "$KEYCHAIN_PASSWORD" build.keychain
 
-          rm /tmp/certificate.p12
+          rm -f /tmp/certificate.p12
+          echo "Certificate imported successfully"
+          security find-identity -v -p codesigning build.keychain
 
       - name: Resolve SPM packages
         run: |
           xcodebuild -resolvePackageDependencies \
             -project Slicky.xcodeproj \
-            -scheme Slicky
+            -scheme Slicky \
+            -clonedSourcePackagesDirPath "$RUNNER_TEMP/spm"
 
       - name: Build (Release, signed)
         env:
@@ -138,32 +147,36 @@ jobs:
             -scheme Slicky \
             -configuration Release \
             -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            -clonedSourcePackagesDirPath "$RUNNER_TEMP/spm" \
             -destination "platform=macOS" \
             DEVELOPMENT_TEAM="$TEAM_ID" \
             CODE_SIGN_IDENTITY="Developer ID Application" \
             CODE_SIGN_STYLE=Manual \
-            build
+            OTHER_CODE_SIGN_FLAGS="--timestamp" \
+            | xcpretty || true
+          ls "$RUNNER_TEMP/DerivedData/Build/Products/Release/"
 
-      - name: Verify code signature
+      - name: Verify signature
         run: |
-          APP="$RUNNER_TEMP/DerivedData/Build/Products/Release/Slicky.app"
-          codesign --verify --deep --strict "$APP"
-          codesign -dv "$APP"
+          APP=$(find "$RUNNER_TEMP/DerivedData/Build/Products/Release/" -name "Slicky.app" | head -1)
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          spctl --assess --type exec --verbose "$APP" || true
 
       - name: Create DMG
         run: |
-          APP="$RUNNER_TEMP/DerivedData/Build/Products/Release/Slicky.app"
-          mkdir -p /tmp/dmg-contents
-          cp -R "$APP" /tmp/dmg-contents/
-          # Create a symlink to /Applications for the drag-to-install UX
-          ln -s /Applications /tmp/dmg-contents/Applications
+          APP=$(find "$RUNNER_TEMP/DerivedData/Build/Products/Release/" -name "Slicky.app" | head -1)
+          mkdir -p /tmp/dmg-staging
+          cp -R "$APP" /tmp/dmg-staging/
+          ln -s /Applications /tmp/dmg-staging/Applications
 
           hdiutil create \
             -volname "Slicky" \
-            -srcfolder /tmp/dmg-contents \
+            -srcfolder /tmp/dmg-staging \
             -ov \
             -format UDZO \
             /tmp/Slicky.dmg
+
+          echo "DMG size: $(du -sh /tmp/Slicky.dmg | cut -f1)"
 
       - name: Notarize DMG
         env:
@@ -176,13 +189,22 @@ jobs:
             --team-id "$TEAM_ID" \
             --password "$NOTARIZATION_PASSWORD" \
             --wait \
-            --timeout 20m
+            --timeout 20m \
+            --verbose
 
       - name: Staple notarization ticket
-        run: xcrun stapler staple /tmp/Slicky.dmg
+        run: |
+          xcrun stapler staple /tmp/Slicky.dmg
+          xcrun stapler validate /tmp/Slicky.dmg
 
-      - name: Upload DMG as release asset
+      - name: Rename DMG with version tag
+        run: |
+          TAG="${{ github.ref_name }}"
+          mv /tmp/Slicky.dmg /tmp/Slicky-${TAG}.dmg
+          echo "DMG_NAME=Slicky-${TAG}.dmg" >> $GITHUB_ENV
+
+      - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: /tmp/Slicky.dmg
+          files: /tmp/${{ env.DMG_NAME }}
           generate_release_notes: true

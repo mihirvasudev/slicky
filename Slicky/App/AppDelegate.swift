@@ -6,6 +6,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var menuBarController: MenuBarController?
     var hotkeyManager: HotkeyManager?
     var hudController: HUDWindowController?
+    var onboardingWindow: NSWindow?  // strong ref prevents dealloc
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -89,7 +90,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func showOnboarding() {
-        NSApp.activate(ignoringOtherApps: true)
+        // Guard against showing twice
+        if let existing = onboardingWindow, existing.isVisible { existing.makeKeyAndOrderFront(nil); return }
+
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 520, height: 460),
             styleMask: [.titled, .closable],
@@ -99,12 +102,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         window.title = "Welcome to Slicky"
         window.center()
         window.contentView = NSHostingView(
-            rootView: OnboardingView(settings: settings) { [weak self] in
+            rootView: OnboardingView(settings: settings) { [weak self, weak window] in
                 self?.settings.onboardingComplete = true
-                window.orderOut(nil)
+                window?.orderOut(nil)
+                self?.onboardingWindow = nil
                 self?.requestAccessibilityIfNeeded()
             }
         )
+        onboardingWindow = window   // retain strongly so ARC doesn't deallocate it
+        NSApp.activate(ignoringOtherApps: true)
         window.makeKeyAndOrderFront(nil)
     }
 }

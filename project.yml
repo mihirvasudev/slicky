@@ -4,7 +4,6 @@ options:
   deploymentTarget:
     macOS: "12.0"
   createIntermediateGroups: true
-  xcodeVersion: "14.2"
 
 packages:
   HotKey:
@@ -37,8 +36,21 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.mihir.slicky
         MACOSX_DEPLOYMENT_TARGET: "12.0"
         SWIFT_VERSION: "5.7"
-        CODE_SIGN_IDENTITY: "-"
-        CODE_SIGNING_REQUIRED: "NO"
-        CODE_SIGNING_ALLOWED: "NO"
-        ENABLE_HARDENED_RUNTIME: "NO"
-        SWIFT_OPTIMIZATION_LEVEL: "-Onone"
+
+      # Debug: unsigned, no hardened runtime — fast local iteration
+      configs:
+        Debug:
+          CODE_SIGN_IDENTITY: "-"
+          CODE_SIGNING_REQUIRED: "NO"
+          CODE_SIGNING_ALLOWED: "NO"
+          ENABLE_HARDENED_RUNTIME: "NO"
+          SWIFT_OPTIMIZATION_LEVEL: "-Onone"
+
+        # Release: ready for Developer ID signing + notarization
+        Release:
+          CODE_SIGN_IDENTITY: "Developer ID Application"
+          CODE_SIGNING_REQUIRED: "YES"
+          CODE_SIGNING_ALLOWED: "YES"
+          CODE_SIGN_STYLE: Manual
+          ENABLE_HARDENED_RUNTIME: "YES"
+          SWIFT_OPTIMIZATION_LEVEL: "-O"

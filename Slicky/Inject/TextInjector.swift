@@ -6,7 +6,7 @@ final class TextInjector {
 
     /// Injects text into the target element, using AX if possible, clipboard+Cmd+V as fallback.
     func inject(text: String, context: CapturedContext, completion: @escaping () -> Void) {
-        // Try AX first — works without activating the original app
+        // Try AX first — works without activating the original app or touching clipboard
         if let element = context.focusedElement, injectViaAX(text: text, into: element) {
             completion()
             return
@@ -19,7 +19,6 @@ final class TextInjector {
 
     @discardableResult
     private func injectViaAX(text: String, into element: AXUIElement) -> Bool {
-        // Replace selected text
         let result = AXUIElementSetAttributeValue(
             element,
             kAXSelectedTextAttribute as CFString,
@@ -30,14 +29,20 @@ final class TextInjector {
 
     // MARK: - Clipboard Injection
 
-    private func injectViaClipboard(text: String, originalApp: NSRunningApplication?, completion: @escaping () -> Void) {
+    private func injectViaClipboard(
+        text: String,
+        originalApp: NSRunningApplication?,
+        completion: @escaping () -> Void
+    ) {
         let pasteboard = NSPasteboard.general
-        let previousContent = pasteboard.string(forType: .string)
+
+        // Snapshot entire clipboard (images, files, rich text — everything)
+        let snapshot = PasteboardSnapshot(pasteboard)
 
         pasteboard.clearContents()
         pasteboard.setString(text, forType: .string)
 
-        // Activate the original app, then send Cmd+V
+        // Re-activate the original app then send Cmd+V
         if let app = originalApp {
             app.activate(options: .activateIgnoringOtherApps)
         }
@@ -46,11 +51,10 @@ final class TextInjector {
             self.simulatePaste()
             completion()
 
-            // Restore clipboard after paste has time to process
+            // Restore original clipboard contents after the paste has landed
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                if let prev = previousContent {
-                    pasteboard.clearContents()
-                    pasteboard.setString(prev, forType: .string)
+                if !snapshot.isEmpty {
+                    snapshot.restore(to: pasteboard)
                 }
             }
         }
@@ -58,13 +62,11 @@ final class TextInjector {
 
     private func simulatePaste() {
         let src = CGEventSource(stateID: .hidSystemState)
-
-        let keyDown = CGEvent(keyboardEventSource: src, virtualKey: 9, keyDown: true) // 9 = V
-        keyDown?.flags = .maskCommand
-        keyDown?.post(tap: .cgSessionEventTap)
-
-        let keyUp = CGEvent(keyboardEventSource: src, virtualKey: 9, keyDown: false)
-        keyUp?.flags = .maskCommand
-        keyUp?.post(tap: .cgSessionEventTap)
+        let down = CGEvent(keyboardEventSource: src, virtualKey: 9, keyDown: true) // 9 = V
+        down?.flags = .maskCommand
+        down?.post(tap: .cgSessionEventTap)
+        let up = CGEvent(keyboardEventSource: src, virtualKey: 9, keyDown: false)
+        up?.flags = .maskCommand
+        up?.post(tap: .cgSessionEventTap)
     }
 }
