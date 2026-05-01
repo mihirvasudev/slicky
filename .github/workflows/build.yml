@@ -50,7 +50,7 @@ jobs:
             -scheme Slicky \
             -clonedSourcePackagesDirPath "$RUNNER_TEMP/spm"
 
-      - name: Build (Debug, unsigned)
+      - name: Build (Debug, unsigned, universal)
         run: |
           set -euo pipefail
           xcodebuild \
@@ -60,6 +60,8 @@ jobs:
             -derivedDataPath "$RUNNER_TEMP/DerivedData" \
             -clonedSourcePackagesDirPath "$RUNNER_TEMP/spm" \
             -destination "platform=macOS" \
+            ARCHS="arm64 x86_64" \
+            ONLY_ACTIVE_ARCH=NO \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO
