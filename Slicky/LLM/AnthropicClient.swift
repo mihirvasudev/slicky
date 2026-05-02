@@ -50,7 +50,15 @@ final class AnthropicClient {
                     var parser = SSEParser()
                     var totalChars = 0
                     var stopReason: String?
+                    var lineCount = 0
+                    var dataSamples: [String] = []
                     for try await line in bytes.lines {
+                        lineCount += 1
+                        // Sample first 6 non-empty data: lines for diagnostics
+                        // when the stream ends with no tokens.
+                        if dataSamples.count < 6, line.hasPrefix("data:") {
+                            dataSamples.append(String(line.prefix(200)))
+                        }
                         switch parser.processLine(line) {
                         case .textDelta(let token):
                             totalChars += token.count
@@ -67,8 +75,9 @@ final class AnthropicClient {
 
                     if totalChars == 0 {
                         let detail = stopReason.map { "stop_reason=\($0)" } ?? "no tokens received"
-                        NSLog("Slicky empty stream: %@ (model=%@)", detail, model)
-                        throw AnthropicStreamError(kind: .noContent, message: detail)
+                        NSLog("Slicky empty stream: %@ (model=%@, lines=%d)\nSamples:\n%@", detail, model, lineCount, dataSamples.joined(separator: "\n"))
+                        let userDetail = stopReason.map { "Stop reason: \($0)." } ?? "The model produced no text. Check Console.app for 'Slicky empty stream' to see what came across the wire."
+                        throw AnthropicStreamError(kind: .noContent, message: userDetail)
                     }
                     if let reason = stopReason, reason != "end_turn" && reason != "stop_sequence" {
                         NSLog("Slicky early stop: %@ (chars=%d)", reason, totalChars)
