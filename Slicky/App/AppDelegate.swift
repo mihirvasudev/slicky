@@ -15,6 +15,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         hudController = HUDWindowController(settings: settings)
         hotkeyManager = HotkeyManager()
 
+        // Start clipboard change tracker early so we can show useful "copied 12s ago"
+        // age information in diagnostics and the HUD.
+        _ = ClipboardChangeTracker.shared
+
         registerHotkey()
         requestAccessibilityIfNeeded()
 
@@ -60,10 +64,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         guard let hud = hudController, !hud.isVisible else { return }
 
-        // Give users a beat to release the global hotkey before clipboard fallback.
-        // Otherwise Cursor can receive Cmd+Option+C instead of the plain Cmd+C copy.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
-            self?.captureAndShowHUD()
+        // Auto strategy synthesises Cmd+C and needs the modifiers released first
+        // so the target app sees a clean ⌘C. Other strategies fire immediately.
+        if settings.captureStrategy == .auto {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
+                self?.captureAndShowHUD()
+            }
+        } else {
+            captureAndShowHUD()
         }
     }
 
@@ -72,10 +80,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard let hud = hudController, !hud.isVisible else { return }
 
         do {
-            let context = try AXContext.shared.captureContext()
+            let context = try CaptureCoordinator.shared.capture(strategy: settings.captureStrategy)
             hud.show(context: context)
         } catch {
-            menuBarController?.showMessage("Could not read selection: \(error.localizedDescription)")
+            menuBarController?.showMessage(error.localizedDescription)
         }
     }
 

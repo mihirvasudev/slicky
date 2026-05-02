@@ -12,6 +12,7 @@ struct SettingsView: View {
     @State private var hotkeyEventMonitor: Any?
     @State private var hotkeyStatusMessage: String?
     @State private var apiKeySaveError: String?
+    @State private var diagnosticReport: CaptureCoordinator.DiagnosticReport?
 
     var body: some View {
         ScrollView {
@@ -19,6 +20,8 @@ struct SettingsView: View {
                 apiKeySection
                 Divider()
                 modelSection
+                Divider()
+                captureSection
                 Divider()
                 hotkeySection
                 Divider()
@@ -28,7 +31,7 @@ struct SettingsView: View {
             }
             .padding(24)
         }
-        .frame(width: 480, height: 520)
+        .frame(width: 520, height: 640)
         .onAppear {
             apiKeyInput = KeychainManager.shared.apiKey
             axTrusted = AXIsProcessTrusted()
@@ -36,6 +39,7 @@ struct SettingsView: View {
         .onChange(of: settings.draftModel) { _ in settings.persist() }
         .onChange(of: settings.classifyModel) { _ in settings.persist() }
         .onChange(of: settings.skipCritique) { _ in settings.persist() }
+        .onChange(of: settings.captureStrategy) { _ in settings.persist() }
         .onChange(of: isRecordingHotkey) { recording in
             if recording {
                 startHotkeyRecording()
@@ -122,6 +126,101 @@ struct SettingsView: View {
                 Toggle("Skip critique step (faster, ~60% cheaper)", isOn: $settings.skipCritique)
                     .help("Skips the self-critique and refinement step. Use for simple prompts when speed matters.")
             }
+        }
+    }
+
+    private var captureSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            sectionHeader("Text capture", icon: "text.viewfinder")
+
+            Picker("Strategy", selection: $settings.captureStrategy) {
+                ForEach(SlickySettings.CaptureStrategy.allCases) { strategy in
+                    Text(strategy.displayName).tag(strategy)
+                }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+
+            Text(settings.captureStrategy.explanation)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Button {
+                runCaptureTest()
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "play.circle")
+                    Text("Test Capture")
+                }
+            }
+            .buttonStyle(.bordered)
+            .help("Switch to the app you want to capture from, select or copy text, come back here, and click this button.")
+
+            if let report = diagnosticReport {
+                diagnosticReportView(report)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func diagnosticReportView(_ report: CaptureCoordinator.DiagnosticReport) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Divider()
+            HStack {
+                Image(systemName: report.chosenSource != nil ? "checkmark.seal.fill" : "exclamationmark.octagon.fill")
+                    .foregroundColor(report.chosenSource != nil ? .green : .red)
+                Text(report.chosenSource != nil
+                     ? "Slicky would use \(label(for: report.chosenSource!))"
+                     : "Slicky cannot capture text")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+            }
+
+            if let app = report.appName.isEmpty ? nil : report.appName {
+                detailRow("Front app", value: app)
+            }
+            if !report.bundleID.isEmpty {
+                detailRow("Bundle ID", value: report.bundleID, secondary: true)
+            }
+            detailRow("AX selection", value: report.axTextPreview ?? "(none)")
+            detailRow("Clipboard", value: report.clipboardTextPreview ?? "(empty)")
+            detailRow("Clipboard age", value: report.clipboardAge, secondary: true)
+            if let chosen = report.chosenTextPreview {
+                detailRow("Will use", value: chosen, accent: true)
+            }
+            if let err = report.errorMessage {
+                Label(err, systemImage: "exclamationmark.triangle")
+                    .font(.caption)
+                    .foregroundColor(.red)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(10)
+        .background(Color(NSColor.controlBackgroundColor))
+        .cornerRadius(8)
+    }
+
+    private func detailRow(_ label: String, value: String, accent: Bool = false, secondary: Bool = false) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Text(label)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .frame(width: 110, alignment: .leading)
+            Text(value)
+                .font(.caption)
+                .foregroundColor(accent ? .accentColor : (secondary ? .secondary : .primary))
+                .lineLimit(3)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+        }
+    }
+
+    private func label(for source: CaptureSource) -> String {
+        switch source {
+        case .axSelection:    return "the live selection"
+        case .clipboardLive:  return "the existing clipboard"
+        case .syntheticCopy:  return "a synthetic auto-copy"
         }
     }
 
@@ -233,6 +332,14 @@ struct SettingsView: View {
         withAnimation { savedFlash = true }
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             withAnimation { savedFlash = false }
+        }
+    }
+
+    private func runCaptureTest() {
+        // Run after a short delay so the user can switch to the target app.
+        diagnosticReport = nil
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            diagnosticReport = CaptureCoordinator.shared.dryRun(strategy: settings.captureStrategy)
         }
     }
 

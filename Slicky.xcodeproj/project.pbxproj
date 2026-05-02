@@ -37,6 +37,7 @@
 		E4AD485DB54B91A0DB34A355 /* coding-bug.md in Resources */ = {isa = PBXBuildFile; fileRef = BB46EC8696A3CC8BC720FBB9 /* coding-bug.md */; };
 		F35EB93F9FEC8C527BA5F93F /* ClipboardCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE385C42F6CFDEDBFF59442B /* ClipboardCapture.swift */; };
 		F9F790C3017CA4D9406EF532 /* SlickySettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = E44541801AB4ED1AB8BBC44E /* SlickySettings.swift */; };
+		FAEB87565CA3376FAC0DF230 /* CaptureCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BD0685A1734E929D51FC737 /* CaptureCoordinator.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -53,6 +54,7 @@
 		65A6C4E73720021DC9A251DD /* HUDViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HUDViewModel.swift; sourceTree = "<group>"; };
 		671F921A8C5CB49CEBD07C90 /* HotkeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyManager.swift; sourceTree = "<group>"; };
 		6AC2AAF464D1883B77F1EF53 /* system.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = system.md; sourceTree = "<group>"; };
+		6BD0685A1734E929D51FC737 /* CaptureCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureCoordinator.swift; sourceTree = "<group>"; };
 		75AD9C4CACDBAAFAA43CEE1B /* Slicky.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Slicky.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		81A4C4280FB9333398191E52 /* AppDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDetector.swift; sourceTree = "<group>"; };
 		833CFB8B89C6428614521B47 /* research.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = research.md; sourceTree = "<group>"; };
@@ -114,6 +116,7 @@
 			children = (
 				81A4C4280FB9333398191E52 /* AppDetector.swift */,
 				ED1EC9BBA2E991D60F933BA2 /* AXContext.swift */,
+				6BD0685A1734E929D51FC737 /* CaptureCoordinator.swift */,
 				BE385C42F6CFDEDBFF59442B /* ClipboardCapture.swift */,
 			);
 			path = Capture;
@@ -302,6 +305,7 @@
 				12CA8821B2338734F4D53111 /* AnthropicClient.swift in Sources */,
 				B83E6B95C5254DF980621B9C /* AppDelegate.swift in Sources */,
 				1D2425F4F7BDA24F014F5966 /* AppDetector.swift in Sources */,
+				FAEB87565CA3376FAC0DF230 /* CaptureCoordinator.swift in Sources */,
 				F35EB93F9FEC8C527BA5F93F /* ClipboardCapture.swift in Sources */,
 				0CB15FB05213E06FCF664E04 /* HUDView.swift in Sources */,
 				933EF6925B9327AFF06539BF /* HUDViewModel.swift in Sources */,

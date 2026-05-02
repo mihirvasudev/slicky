@@ -4,6 +4,7 @@ import SwiftUI
 struct HUDView: View {
     @ObservedObject var viewModel: HUDViewModel
     let originalText: String
+    let captureSource: CaptureSource
     let onAccept: () -> Void
     let onCancel: () -> Void
 
@@ -39,6 +40,7 @@ struct HUDView: View {
                 .foregroundColor(.accentColor)
             Text("Slicky")
                 .fontWeight(.semibold)
+            captureSourceBadge
             if let intent = viewModel.classifiedIntent {
                 Capsule()
                     .fill(intentColor(intent).opacity(0.2))
@@ -56,6 +58,31 @@ struct HUDView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
+    }
+
+    private var captureSourceBadge: some View {
+        let icon: String
+        let label: String
+        switch captureSource {
+        case .axSelection:
+            icon = "text.cursor"
+            label = "from selection"
+        case .clipboardLive:
+            icon = "doc.on.clipboard"
+            label = "from clipboard"
+        case .syntheticCopy:
+            icon = "rectangle.on.rectangle.angled"
+            label = "auto-copied"
+        }
+        return HStack(spacing: 4) {
+            Image(systemName: icon).font(.caption2)
+            Text(label).font(.caption)
+        }
+        .foregroundColor(.secondary)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 3)
+        .background(Color(NSColor.controlColor).opacity(0.6))
+        .cornerRadius(6)
     }
 
     private var stageIndicator: some View {

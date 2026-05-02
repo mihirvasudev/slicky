@@ -23,6 +23,7 @@ final class HUDWindowController {
         let hudView = HUDView(
             viewModel: vm,
             originalText: context.selectedText,
+            captureSource: context.source,
             onAccept: { [weak self] in self?.acceptRewrite() },
             onCancel: { [weak self] in self?.dismiss() }
         )

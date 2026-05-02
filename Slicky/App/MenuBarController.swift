@@ -24,7 +24,11 @@ final class MenuBarController: NSObject {
         let image = NSImage(systemSymbolName: "wand.and.stars", accessibilityDescription: "Slicky")
         image?.isTemplate = true
         button.image = image
-        button.toolTip = "Slicky — Select text + \(settings.hotkeyDisplayString) to rewrite"
+        button.toolTip = tooltipText()
+    }
+
+    private func tooltipText() -> String {
+        "Slicky — Select text (or copy with ⌘C) + \(settings.hotkeyDisplayString) to rewrite"
     }
 
     private func configureMenu() {
@@ -54,7 +58,7 @@ final class MenuBarController: NSObject {
 
     func refreshHotkey() {
         hotkeyItem?.title = "Hotkey: \(settings.hotkeyDisplayString)"
-        statusItem.button?.toolTip = "Slicky — Select text + \(settings.hotkeyDisplayString) to rewrite"
+        statusItem.button?.toolTip = tooltipText()
     }
 
     @objc private func handleSettings() {
@@ -78,7 +82,7 @@ final class MenuBarController: NSObject {
 
         showMessagePopover(message, relativeTo: button)
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 6) {
             button.image = originalImage
             self.refreshHotkey()
             if let item = self.messageItem {
@@ -94,7 +98,7 @@ final class MenuBarController: NSObject {
 
         let popover = NSPopover()
         popover.behavior = .transient
-        popover.contentSize = NSSize(width: 320, height: 122)
+        popover.contentSize = NSSize(width: 340, height: 180)
         popover.contentViewController = NSHostingController(rootView: SlickyMessagePopover(message: message))
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         messagePopover = popover
@@ -106,7 +110,7 @@ final class MenuBarController: NSObject {
             }
         }
         messageDismissWorkItem = dismiss
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5, execute: dismiss)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 8, execute: dismiss)
     }
 }
 
@@ -127,11 +131,18 @@ private struct SlickyMessagePopover: View {
                 .foregroundColor(.primary)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Text("Tip: select text first, then use your Slicky hotkey. The error is also in the menu bar tooltip.")
-                .font(.caption)
-                .foregroundColor(.secondary)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Tip: in apps like Cursor, copy your text first with ⌘C, then press the Slicky hotkey.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("In Slicky Settings → Test Capture, you can verify what Slicky sees in any app.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
         .padding(14)
-        .frame(width: 320, alignment: .leading)
+        .frame(width: 340, alignment: .leading)
     }
 }

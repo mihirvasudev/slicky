@@ -1,6 +1,15 @@
 import AppKit
 import ApplicationServices
 
+/// Where the captured text came from. Surfaced in the HUD so the user knows
+/// whether Slicky read the live selection, used what they pre-copied, or
+/// resorted to the synthetic Cmd+C path.
+enum CaptureSource: String {
+    case axSelection      // Read directly from AXSelectedText / parameterized AX.
+    case clipboardLive    // Existing clipboard contents (Clippy-style).
+    case syntheticCopy    // Slicky pressed Cmd+C and read the result.
+}
+
 struct CapturedContext {
     let selectedText: String
     let surroundingText: String
@@ -9,53 +18,62 @@ struct CapturedContext {
     let windowTitle: String
     let focusedElement: AXUIElement?
     let originalApp: NSRunningApplication?
+    let source: CaptureSource
+
+    /// Convenience: the live AX selection always represents the *current*
+    /// cursor selection, while the clipboard might be older. Useful for HUD copy.
+    var sourceDisplay: String {
+        switch source {
+        case .axSelection:    return "from selection"
+        case .clipboardLive:  return "from clipboard"
+        case .syntheticCopy:  return "auto-copied"
+        }
+    }
 }
 
+/// AXContext now owns *only* the Accessibility-tree reading. Coordination
+/// across strategies (AX → clipboard → synthetic) lives in CaptureCoordinator.
 final class AXContext {
     static let shared = AXContext()
     private init() {}
 
-    func captureContext() throws -> CapturedContext {
+    struct AXResult {
+        let selectedText: String
+        let surroundingText: String
+        let focusedElement: AXUIElement?
+        let appBundleID: String
+        let appName: String
+        let windowTitle: String
+        let originalApp: NSRunningApplication?
+    }
+
+    /// Reads selected/surrounding text + window context purely via Accessibility.
+    /// Returns empty `selectedText` when AX has nothing to offer (Cursor, etc.) —
+    /// the coordinator decides what to do next.
+    func readAccessibilityState() throws -> AXResult {
         guard AXIsProcessTrusted() else {
             throw SlickyAXError.permissionDenied
         }
-
         guard let frontApp = NSWorkspace.shared.frontmostApplication else {
             throw SlickyAXError.noFrontApp
         }
         let pid = frontApp.processIdentifier
         let axApp = AXUIElementCreateApplication(pid)
 
-        // Get focused UI element
         var focusedRef: CFTypeRef?
         let focusedOK = AXUIElementCopyAttributeValue(axApp, kAXFocusedUIElementAttribute as CFString, &focusedRef).rawValue == 0
         let focusedElement: AXUIElement? = focusedOK ? axElement(from: focusedRef) : nil
 
-        // Try to get selected text from the focused element
         var selectedText = ""
         if let element = focusedElement {
             selectedText = readSelectedText(from: element)
         }
 
-        // Fallback: clipboard trick for Electron/Terminal apps
-        if selectedText.isEmpty {
-            selectedText = ClipboardCapture.shared.captureSelection(from: frontApp) ?? ""
-        }
-
-        if selectedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            throw SlickyAXError.noSelectedText(
-                appName: frontApp.localizedName ?? "the current app",
-                detail: ClipboardCapture.shared.lastFailureReason
-            )
-        }
-
-        // Surrounding text for context injection
         var surroundingText = ""
-        if let element = focusedElement {
+        if let element = focusedElement, !selectedText.isEmpty {
             surroundingText = readSurroundingText(from: element, selected: selectedText)
         }
 
-        // Window title for file path hints
         var windowTitle = ""
         var windowRef: CFTypeRef?
         if AXUIElementCopyAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, &windowRef).rawValue == 0,
@@ -66,13 +84,13 @@ final class AXContext {
             }
         }
 
-        return CapturedContext(
+        return AXResult(
             selectedText: selectedText,
             surroundingText: surroundingText,
+            focusedElement: focusedElement,
             appBundleID: frontApp.bundleIdentifier ?? "",
             appName: frontApp.localizedName ?? "",
             windowTitle: windowTitle,
-            focusedElement: focusedElement,
             originalApp: frontApp
         )
     }
@@ -93,7 +111,7 @@ final class AXContext {
             return text
         }
 
-        // Parameterized approach for apps that expose range but not direct text
+        // Parameterized approach for apps that expose range but not direct text.
         var rangeRef: CFTypeRef?
         if AXUIElementCopyAttributeValue(element, kAXSelectedTextRangeAttribute as CFString, &rangeRef).rawValue == 0,
            let rangeValue = rangeRef {
@@ -136,17 +154,25 @@ final class AXContext {
 enum SlickyAXError: LocalizedError {
     case noFrontApp
     case permissionDenied
-    case noSelectedText(appName: String, detail: String)
+    case noTextAnywhere(appName: String, strategy: SlickySettings.CaptureStrategy, detail: String)
 
     var errorDescription: String? {
         switch self {
-        case .noFrontApp: return "No frontmost application found."
-        case .permissionDenied: return "Accessibility permission not granted. Enable Slicky in System Settings › Privacy & Security › Accessibility."
-        case .noSelectedText(let appName, let detail):
-            if detail.isEmpty {
-                return "I couldn't read selected text from \(appName). Select text first, then press your Slicky hotkey."
+        case .noFrontApp:
+            return "No frontmost application found."
+        case .permissionDenied:
+            return "Accessibility permission not granted. Enable Slicky in System Settings › Privacy & Security › Accessibility."
+        case .noTextAnywhere(let appName, let strategy, let detail):
+            switch strategy {
+            case .smart:
+                let base = "I couldn't read selected text from \(appName), and your clipboard doesn't have any text either. In apps like Cursor, copy your prompt first (⌘C), then press the Slicky hotkey."
+                return detail.isEmpty ? base : "\(base) \(detail)"
+            case .auto:
+                let base = "I tried Accessibility, the existing clipboard, and a synthetic Cmd+C — none of them returned text from \(appName). Copy your text first (⌘C), then press the Slicky hotkey."
+                return detail.isEmpty ? base : "\(base) \(detail)"
+            case .clipboardOnly:
+                return "Your clipboard doesn't have any plain text. Copy your prompt first (⌘C), then press the Slicky hotkey."
             }
-            return "I couldn't read selected text from \(appName). \(detail)"
         }
     }
 }

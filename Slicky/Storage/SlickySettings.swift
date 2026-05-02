@@ -22,11 +22,46 @@ final class SlickySettings: ObservableObject {
         }
     }
 
+    // MARK: - Capture strategy
+
+    /// Order of attempts Slicky uses to read what you want rewritten.
+    /// `smart` is the rock-solid default: read the AX selection if the app
+    /// supports it, otherwise read whatever the user already put on the
+    /// clipboard. `auto` adds a last-ditch synthetic Cmd+C, which is
+    /// brittle inside Electron apps like Cursor.
+    enum CaptureStrategy: String, CaseIterable, Identifiable {
+        case smart       // AX → existing clipboard. No synthesized copy. (default)
+        case auto        // AX → existing clipboard → synthetic Cmd+C.
+        case clipboardOnly // Always use existing clipboard, skip AX.
+
+        var id: String { rawValue }
+        var displayName: String {
+            switch self {
+            case .smart:         return "Smart (recommended)"
+            case .auto:          return "Smart + auto-copy fallback"
+            case .clipboardOnly: return "Clipboard only"
+            }
+        }
+        var explanation: String {
+            switch self {
+            case .smart:
+                return "Reads selected text natively when possible. In Electron apps (Cursor, VS Code, Discord, Slack), copy first (⌘C), then press the hotkey."
+            case .auto:
+                return "Same as Smart, but Slicky also tries to press ⌘C for you as a last resort. Less reliable in Cursor — keep the hotkey held briefly so the modifiers can't leak into the synthetic copy."
+            case .clipboardOnly:
+                return "Always uses whatever's on your clipboard. Pure Clippy mode: copy first (⌘C), press hotkey. Works identically in every app."
+            }
+        }
+    }
+
     // MARK: - Published
 
     @Published var draftModel: DraftModel = .sonnet
     @Published var classifyModel: DraftModel = .haiku
     @Published var skipCritique: Bool = false
+    @Published var captureStrategy: CaptureStrategy = .smart {
+        didSet { defaults.set(captureStrategy.rawValue, forKey: "captureStrategy") }
+    }
     @Published var onboardingComplete: Bool = false {
         didSet { defaults.set(onboardingComplete, forKey: "onboardingComplete") }
     }
@@ -69,6 +104,10 @@ final class SlickySettings: ObservableObject {
             classifyModel = model
         }
         skipCritique = defaults.bool(forKey: "skipCritique")
+        if let raw = defaults.string(forKey: "captureStrategy"),
+           let strategy = CaptureStrategy(rawValue: raw) {
+            captureStrategy = strategy
+        }
         onboardingComplete = defaults.bool(forKey: "onboardingComplete")
         refreshHotkeyDisplay()
     }
@@ -77,6 +116,7 @@ final class SlickySettings: ObservableObject {
         defaults.set(draftModel.rawValue, forKey: "draftModel")
         defaults.set(classifyModel.rawValue, forKey: "classifyModel")
         defaults.set(skipCritique, forKey: "skipCritique")
+        defaults.set(captureStrategy.rawValue, forKey: "captureStrategy")
         defaults.set(onboardingComplete, forKey: "onboardingComplete")
     }
 

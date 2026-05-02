@@ -1,14 +1,79 @@
 import AppKit
 
-/// Clipboard-based text capture for apps that don't expose AXSelectedText
-/// (Terminal, iTerm2, some Electron apps).
-final class ClipboardCapture {
-    static let shared = ClipboardCapture()
+/// Reads what's already on the clipboard. Pure read — no synthetic Cmd+C, no
+/// app activation. This is the rock-solid Clippy-style path: when the user
+/// presses Cmd+C themselves, *their* app handles the copy and we just read it.
+struct ClipboardReader {
+    struct Result {
+        let text: String
+        let isStale: Bool   // true if pasteboard hasn't changed in a while
+        let ageDescription: String
+    }
+
+    static func read() -> Result? {
+        let pasteboard = NSPasteboard.general
+        guard let raw = pasteboard.string(forType: .string),
+              !raw.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return nil
+        }
+        let trackedAge = ClipboardChangeTracker.shared.ageOfCurrentChange()
+        let isStale = trackedAge.map { $0 > 300 } ?? false
+        let ageDescription = trackedAge.map { Self.formatAge($0) } ?? "unknown age"
+        return Result(text: raw, isStale: isStale, ageDescription: ageDescription)
+    }
+
+    private static func formatAge(_ seconds: TimeInterval) -> String {
+        if seconds < 5 { return "just now" }
+        if seconds < 60 { return "\(Int(seconds))s ago" }
+        let minutes = Int(seconds / 60)
+        if minutes < 60 { return "\(minutes)m ago" }
+        let hours = Int(seconds / 3600)
+        return "\(hours)h ago"
+    }
+}
+
+/// Tracks the timestamp of the last NSPasteboard change so we can tell the
+/// user whether they're rewriting freshly-copied text or something old.
+final class ClipboardChangeTracker {
+    static let shared = ClipboardChangeTracker()
+    private init() { startWatching() }
+
+    private var lastChangeCount: Int = NSPasteboard.general.changeCount
+    private var lastChangeAt: Date = Date()
+    private var timer: Timer?
+
+    private func startWatching() {
+        // 0.5s is plenty fast for HUD purposes and costs ~nothing.
+        let timer = Timer(timeInterval: 0.5, repeats: true) { [weak self] _ in
+            self?.poll()
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        self.timer = timer
+    }
+
+    private func poll() {
+        let pb = NSPasteboard.general
+        if pb.changeCount != lastChangeCount {
+            lastChangeCount = pb.changeCount
+            lastChangeAt = Date()
+        }
+    }
+
+    /// Returns seconds since the clipboard last changed, or nil if we
+    /// haven't observed a change yet (Slicky just launched).
+    func ageOfCurrentChange() -> TimeInterval? {
+        Date().timeIntervalSince(lastChangeAt)
+    }
+}
+
+/// Synthetic copy: Slicky sends Cmd+C and reads the result. Brittle in
+/// Electron apps. Only used when the user explicitly opts in to `.auto`.
+final class SyntheticCopy {
+    static let shared = SyntheticCopy()
     private init() {}
 
     private(set) var lastFailureReason: String = ""
 
-    /// Saves current clipboard, simulates Cmd+C to copy selection, reads result, restores clipboard.
     func captureSelection(from originalApp: NSRunningApplication?) -> String? {
         let pasteboard = NSPasteboard.general
         lastFailureReason = ""
@@ -18,16 +83,15 @@ final class ClipboardCapture {
         }
 
         guard waitForAppToBecomeActive(originalApp, timeout: 1.0) else {
-            lastFailureReason = "I tried to return focus to \(originalApp?.localizedName ?? "the previous app"), but macOS did not make it active before copy."
+            lastFailureReason = "Couldn't return focus to \(originalApp?.localizedName ?? "the previous app") before sending the auto-copy."
             return nil
         }
 
         guard waitForHotkeyModifiersToRelease(timeout: 1.2) else {
-            lastFailureReason = "The hotkey modifiers were still held down, so Cursor may not receive a plain Cmd+C copy command. Release the hotkey keys quickly after pressing it."
+            lastFailureReason = "The hotkey modifiers were still held down when Slicky tried to send Cmd+C, so the target app saw a different shortcut. Release the hotkey faster after pressing it."
             return nil
         }
 
-        // Snapshot the entire pasteboard before touching it
         let snapshot = PasteboardSnapshot(pasteboard)
 
         let copyAttempts: [(String, () -> Void)] = [
@@ -48,7 +112,7 @@ final class ClipboardCapture {
             let captured = pasteboard.string(forType: .string)
             guard let text = captured, !text.isEmpty else {
                 snapshot.restore(to: pasteboard)
-                lastFailureReason = "\(label) changed the clipboard, but it did not contain plain text."
+                lastFailureReason = "\(label) changed the clipboard, but it didn't contain plain text."
                 return nil
             }
 
@@ -57,7 +121,7 @@ final class ClipboardCapture {
         }
 
         snapshot.restore(to: pasteboard)
-        lastFailureReason = "Clipboard fallback tried CGEvent and System Events Cmd+C, but the clipboard did not change. Cursor may not have keyboard focus, or no text was selected."
+        lastFailureReason = "Auto-copy tried CGEvent and System Events Cmd+C, but the clipboard never changed. The app may not have keyboard focus, or no text was selected."
         return nil
     }
 
@@ -125,7 +189,7 @@ final class ClipboardCapture {
     }
 }
 
-// MARK: - TextInjector clipboard helper (shared by TextInjector)
+// MARK: - PasteboardSnapshot
 
 /// Saves and restores all items on a pasteboard — preserves rich text, images, files, etc.
 struct PasteboardSnapshot {

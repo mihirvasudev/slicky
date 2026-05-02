@@ -2,20 +2,26 @@
 
 **Turn any sloppy prompt into a great one — anywhere on macOS.**
 
-Select text → press **⌘⌥K** → watch an agentic AI pipeline transform it into a structured, high-leverage prompt with goals, phases, tests, and acceptance criteria — then paste it back.
+Press **⌘⌥K** → watch an agentic AI pipeline transform your prompt into a structured, high-leverage version with goals, phases, tests, and acceptance criteria — then paste it back.
 
-Works in Cursor, Claude Code in Terminal, Codex CLI, claude.ai, ChatGPT, Slack, Notion, and anywhere you can select text.
+Works in Cursor, Claude Code in Terminal, Codex CLI, claude.ai, ChatGPT, Slack, Notion, and anywhere you can select or copy text.
 
 ## How it works
 
-1. **Select** your draft prompt in any app
-2. **Press ⌘⌥K** (or your custom hotkey)
-3. **Watch** the pipeline stream live:
-   - **Classify** — detects intent (coding feature, bug fix, writing, research…)
-   - **Draft** — applies a template tuned to your intent, streams the rewrite
-   - **Critique** — scores the draft against a rubric, identifies gaps
-   - **Refine** — fixes the issues, produces the final version
-4. **Press Return** to paste it back, **Tab** to edit first, **Esc** to cancel
+Slicky has two capture paths and picks the right one automatically:
+
+| Where you are | What you do |
+|---|---|
+| **Native apps** (TextEdit, Notes, Safari, Mail, native input fields) | Select → press ⌘⌥K. Slicky reads the selection through Accessibility. |
+| **Electron apps** (Cursor, VS Code, Slack, Discord, Notion) | Copy first (⌘C), then press ⌘⌥K. Slicky reads what you put on the clipboard. |
+
+Then watch the pipeline stream live:
+- **Classify** — detects intent (coding feature, bug fix, writing, research…)
+- **Draft** — applies a template tuned to your intent, streams the rewrite
+- **Critique** — scores the draft against a rubric, identifies gaps
+- **Refine** — fixes the issues, produces the final version
+
+**Press Return** to paste it back, **Tab** to edit first, **Esc** to cancel.
 
 ## Setup
 
@@ -28,10 +34,18 @@ Works in Cursor, Claude Code in Terminal, Codex CLI, claude.ai, ChatGPT, Slack, 
 ## Settings
 
 - **⌘,** or menu bar → Settings
+- **Text capture strategy**: Smart (default) / Smart + auto-copy fallback / Clipboard only
+- **Test Capture**: verify what Slicky sees in any app — shows AX selection, current clipboard, and which one would be used
 - Switch models (Sonnet for quality, Haiku for speed)
 - Toggle "Skip critique" for a faster 1-step rewrite
 - Rebind the global hotkey if it conflicts with another app
 - View Accessibility permission status
+
+### Capture strategies
+
+- **Smart** (default): reads the live AX selection when the app supports it; otherwise reads what you already copied. No synthetic events. Works everywhere if you press ⌘C in Electron apps first.
+- **Smart + auto-copy fallback**: same as Smart, but if both fail Slicky tries to press ⌘C for you. Less reliable in Cursor — useful in apps that don't expose AX but where you forgot to copy.
+- **Clipboard only**: pure Clippy mode. Always uses whatever's on the clipboard. Predictable in every app.
 
 ## Templates
 

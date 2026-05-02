@@ -10,6 +10,8 @@ struct OnboardingView: View {
     @State private var axTrusted: Bool = AXIsProcessTrusted()
     @State private var apiKeySaveError: String?
 
+    private let totalSteps = 5
+
     var body: some View {
         VStack(spacing: 0) {
             headerSection
@@ -20,7 +22,8 @@ struct OnboardingView: View {
                 welcomeStep.tag(0)
                 apiKeyStep.tag(1)
                 accessibilityStep.tag(2)
-                readyStep.tag(3)
+                howToUseStep.tag(3)
+                readyStep.tag(4)
             }
             .tabViewStyle(.automatic)
 
@@ -28,7 +31,7 @@ struct OnboardingView: View {
 
             navigationButtons
         }
-        .frame(width: 520, height: 460)
+        .frame(width: 540, height: 500)
         .onAppear {
             apiKey = KeychainManager.shared.apiKey
             axTrusted = AXIsProcessTrusted()
@@ -45,7 +48,7 @@ struct OnboardingView: View {
             Text("Welcome to Slicky")
                 .font(.headline)
             Spacer()
-            Text("\(step + 1) / 4")
+            Text("\(step + 1) / \(totalSteps)")
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
@@ -73,9 +76,9 @@ struct OnboardingView: View {
             }
 
             VStack(alignment: .leading, spacing: 10) {
-                featureRow("Works everywhere", detail: "Cursor, Claude Code, Terminal, claude.ai, Slack, Notion", icon: "globe")
-                featureRow("Agentic pipeline", detail: "Classify → Draft → Critique → Refine — live streaming", icon: "sparkles")
-                featureRow("Intent-aware", detail: "Different structure for feature requests vs bug fixes vs writing", icon: "brain")
+                featureRow("Works in Cursor", detail: "Copy your prompt, press the hotkey — bulletproof clipboard capture.", icon: "doc.on.clipboard")
+                featureRow("Works natively too", detail: "Select & hotkey in TextEdit, Notes, Safari — Accessibility reads the live selection.", icon: "text.cursor")
+                featureRow("Agentic pipeline", detail: "Classify → Draft → Critique → Refine — live streaming.", icon: "sparkles")
                 featureRow("Private by default", detail: "Your API key, stored in macOS Keychain. No backend.", icon: "lock.shield")
             }
             .padding(.horizontal, 20)
@@ -177,8 +180,72 @@ struct OnboardingView: View {
         .padding(24)
     }
 
+    private var howToUseStep: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "doc.on.clipboard.fill")
+                .font(.system(size: 40))
+                .foregroundColor(.accentColor)
+
+            VStack(spacing: 8) {
+                Text("How Slicky reads your text")
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                Text("Two paths, totally automatic. You don't need to choose — Slicky picks the right one for the app you're in.")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 16)
+            }
+
+            VStack(alignment: .leading, spacing: 14) {
+                pathRow(
+                    icon: "text.cursor",
+                    badge: "Native apps",
+                    title: "Just select & press \(settings.hotkeyDisplayString)",
+                    detail: "TextEdit, Notes, Safari, Mail, native input fields. Slicky reads the live selection through Accessibility — nothing else needed."
+                )
+
+                pathRow(
+                    icon: "doc.on.clipboard",
+                    badge: "Cursor / VS Code / Slack / Discord",
+                    title: "Copy first (⌘C), then press \(settings.hotkeyDisplayString)",
+                    detail: "Electron apps don't expose selected text. Copy with your normal ⌘C — Slicky reads what you put on the clipboard. 100% reliable.",
+                    accent: true
+                )
+            }
+            .padding(.horizontal, 4)
+
+            Text("You can change this later under Settings → Text capture.")
+                .font(.caption)
+                .foregroundColor(Color.secondary.opacity(0.7))
+        }
+        .padding(20)
+    }
+
+    private func pathRow(icon: String, badge: String, title: String, detail: String, accent: Bool = false) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: icon)
+                .foregroundColor(accent ? .accentColor : .secondary)
+                .frame(width: 28, height: 28)
+                .background((accent ? Color.accentColor : Color.secondary).opacity(0.12))
+                .cornerRadius(6)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(badge)
+                    .font(.caption2)
+                    .foregroundColor(accent ? .accentColor : .secondary)
+                    .fontWeight(.semibold)
+                Text(title)
+                    .fontWeight(.medium)
+                Text(detail)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
     private var readyStep: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 20) {
             Image(systemName: "party.popper.fill")
                 .font(.system(size: 50))
                 .foregroundColor(.yellow)
@@ -187,21 +254,21 @@ struct OnboardingView: View {
                 Text("You're ready!")
                     .font(.title2)
                     .fontWeight(.semibold)
-                Text("Slicky lives in your menu bar. Select any prompt text, press \(settings.hotkeyDisplayString), and watch the magic.")
+                Text("Slicky lives in your menu bar. Try it now in your favourite editor.")
                     .font(.body)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                tipRow("Select your sloppy prompt text first", icon: "cursor.rays")
-                tipRow("Press \(settings.hotkeyDisplayString) (or your custom hotkey)", icon: "keyboard")
+                tipRow("In native apps: select text + \(settings.hotkeyDisplayString)", icon: "cursor.rays")
+                tipRow("In Cursor/Electron apps: ⌘C, then \(settings.hotkeyDisplayString)", icon: "doc.on.clipboard")
                 tipRow("Watch the pipeline — Draft → Critique → Refine", icon: "eyes")
                 tipRow("Press Return to paste, Tab to edit, Esc to cancel", icon: "return")
             }
             .padding(.horizontal, 20)
         }
-        .padding(24)
+        .padding(20)
     }
 
     // MARK: - Navigation
@@ -213,7 +280,7 @@ struct OnboardingView: View {
                     .buttonStyle(.bordered)
             }
             Spacer()
-            if step < 3 {
+            if step < totalSteps - 1 {
                 Button("Next") { advanceStep() }
                     .buttonStyle(.borderedProminent)
                     .disabled(!canAdvance)
