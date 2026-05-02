@@ -17,6 +17,11 @@ final class ClipboardCapture {
             originalApp.activate(options: .activateIgnoringOtherApps)
         }
 
+        guard waitForAppToBecomeActive(originalApp, timeout: 1.0) else {
+            lastFailureReason = "I tried to return focus to \(originalApp?.localizedName ?? "the previous app"), but macOS did not make it active before copy."
+            return nil
+        }
+
         guard waitForHotkeyModifiersToRelease(timeout: 1.2) else {
             lastFailureReason = "The hotkey modifiers were still held down, so Cursor may not receive a plain Cmd+C copy command. Release the hotkey keys quickly after pressing it."
             return nil
@@ -25,29 +30,35 @@ final class ClipboardCapture {
         // Snapshot the entire pasteboard before touching it
         let snapshot = PasteboardSnapshot(pasteboard)
 
-        // Clear and send Cmd+C
-        pasteboard.clearContents()
-        let changeCountBefore = pasteboard.changeCount
-        simulateCopy()
+        let copyAttempts: [(String, () -> Void)] = [
+            ("CGEvent Cmd+C", simulateCopy),
+            ("System Events Cmd+C", simulateCopyWithSystemEvents),
+            ("CGEvent Cmd+C retry", simulateCopy)
+        ]
 
-        guard waitForPasteboardChange(pasteboard, from: changeCountBefore, timeout: 0.8) else {
+        for (label, copy) in copyAttempts {
+            pasteboard.clearContents()
+            let changeCountBefore = pasteboard.changeCount
+            copy()
+
+            guard waitForPasteboardChange(pasteboard, from: changeCountBefore, timeout: 1.2) else {
+                continue
+            }
+
+            let captured = pasteboard.string(forType: .string)
+            guard let text = captured, !text.isEmpty else {
+                snapshot.restore(to: pasteboard)
+                lastFailureReason = "\(label) changed the clipboard, but it did not contain plain text."
+                return nil
+            }
+
             snapshot.restore(to: pasteboard)
-            lastFailureReason = "Clipboard fallback sent Cmd+C, but the clipboard did not change. The active app may have blocked copy, or no text was selected."
-            return nil
-        }
-
-        let captured = pasteboard.string(forType: .string)
-
-        guard let text = captured, !text.isEmpty else {
-            // Nothing new captured — restore immediately
-            snapshot.restore(to: pasteboard)
-            lastFailureReason = "Clipboard changed, but it did not contain plain text."
-            return nil
+            return text
         }
 
         snapshot.restore(to: pasteboard)
-
-        return text
+        lastFailureReason = "Clipboard fallback tried CGEvent and System Events Cmd+C, but the clipboard did not change. Cursor may not have keyboard focus, or no text was selected."
+        return nil
     }
 
     private func simulateCopy() {
@@ -58,6 +69,32 @@ final class ClipboardCapture {
         let up = CGEvent(keyboardEventSource: src, virtualKey: 8, keyDown: false)
         up?.flags = .maskCommand
         up?.post(tap: .cgSessionEventTap)
+    }
+
+    private func simulateCopyWithSystemEvents() {
+        let script = """
+        tell application "System Events"
+            keystroke "c" using command down
+        end tell
+        """
+        var error: NSDictionary?
+        NSAppleScript(source: script)?.executeAndReturnError(&error)
+        if let error {
+            NSLog("Slicky System Events copy failed: %@", error)
+        }
+    }
+
+    private func waitForAppToBecomeActive(_ app: NSRunningApplication?, timeout: TimeInterval) -> Bool {
+        guard let app else { return true }
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if app.isActive || NSWorkspace.shared.frontmostApplication?.processIdentifier == app.processIdentifier {
+                return true
+            }
+            app.activate(options: .activateIgnoringOtherApps)
+            Thread.sleep(forTimeInterval: 0.05)
+        }
+        return false
     }
 
     private func waitForHotkeyModifiersToRelease(timeout: TimeInterval) -> Bool {
