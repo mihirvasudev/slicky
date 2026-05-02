@@ -22,5 +22,13 @@
 - Menu bar status item with wand icon
 
 ### Changed
-- **Default behaviour rewritten for reliability**: Slicky no longer synthesises Cmd+C by default. In apps where AX exposes the selection (native apps), it reads the selection. Otherwise it reads what you put on the clipboard. The synthetic-copy code path is now opt-in under "Smart + auto-copy fallback".
+- **Capture cascade rebuilt**: AX selection → fresh clipboard (≤60s) → AX Edit→Copy menu action → synthetic Cmd+C → fail. Stale clipboard text is never silently used; if synthetic capture fails, you get a clear "press ⌘C and try again" message naming the clipboard's age.
+- **AX-driven Edit→Copy** is now the first auto-capture mechanism — it dispatches Cursor's actual menu command via Accessibility instead of synthesising a keyboard event, which is dramatically more reliable in Electron apps.
+- HUD now shows the original prompt **expanded by default** when captured from clipboard or auto-copy, with a "verify ↓ — Esc to cancel if this is wrong" hint so wrong-text captures are caught in the first second instead of after the model has already run.
 - Menu bar error popovers now stay visible 8s (was 5s) so long error messages can be read.
+
+### Fixed
+- **Empty-rewrite bug**: SSE parser was defaulting unknown event types to `content_block_delta`, silently swallowing `error` events and `stop_reason` payloads. The rewriter now surfaces real Anthropic errors (overloaded, content_filtered, refused) instead of producing a blank prompt with a "Score 1/10, draft is empty" critique.
+- **Empty draft detection**: when the model returns zero tokens (e.g. shell-script content the model declined to rewrite), the HUD shows a clear actionable error instead of running critique-on-nothing.
+- **Stale clipboard hijacking**: previously, if you pressed the hotkey in Cursor without copying first, Slicky silently rewrote whatever was last on your clipboard from minutes earlier. It now fails fast with a message naming the stale clipboard's age.
+- API errors now NSLog to Console.app for debugging.

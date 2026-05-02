@@ -10,6 +10,7 @@
 		0BBD173CCF10F470B2A07688 /* RewriteEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = E426BEC8DD542EC5D775DA04 /* RewriteEvent.swift */; };
 		0CB15FB05213E06FCF664E04 /* HUDView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C19B57D230C44EEAD0E51616 /* HUDView.swift */; };
 		12CA8821B2338734F4D53111 /* AnthropicClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F8CC22BE8F2CFFDE1D39B8D /* AnthropicClient.swift */; };
+		12DDC0B46442506BFC86BE2C /* AXMenuCopy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 037F97D0799094706BB1918C /* AXMenuCopy.swift */; };
 		1D2425F4F7BDA24F014F5966 /* AppDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81A4C4280FB9333398191E52 /* AppDetector.swift */; };
 		26E14CFA1AB9725D13C0D0DB /* LLMRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB6BEC38D689B8BC2F69B592 /* LLMRequest.swift */; };
 		39E2222E60526A97E317AD55 /* AgenticRewriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05EC67465A778A7B387684AC /* AgenticRewriter.swift */; };
@@ -42,6 +43,7 @@
 
 /* Begin PBXFileReference section */
 		00EA057131FC0D98D35ECE90 /* SlickyApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlickyApp.swift; sourceTree = "<group>"; };
+		037F97D0799094706BB1918C /* AXMenuCopy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AXMenuCopy.swift; sourceTree = "<group>"; };
 		05EC67465A778A7B387684AC /* AgenticRewriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgenticRewriter.swift; sourceTree = "<group>"; };
 		0CBDE8F4D8B9ED73FD3C6EBE /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		0DC4878A0BA97677BD409297 /* SSEStream.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSEStream.swift; sourceTree = "<group>"; };
@@ -116,6 +118,7 @@
 			children = (
 				81A4C4280FB9333398191E52 /* AppDetector.swift */,
 				ED1EC9BBA2E991D60F933BA2 /* AXContext.swift */,
+				037F97D0799094706BB1918C /* AXMenuCopy.swift */,
 				6BD0685A1734E929D51FC737 /* CaptureCoordinator.swift */,
 				BE385C42F6CFDEDBFF59442B /* ClipboardCapture.swift */,
 			);
@@ -301,6 +304,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				3A2F06BF16FB36DBBD46A6E4 /* AXContext.swift in Sources */,
+				12DDC0B46442506BFC86BE2C /* AXMenuCopy.swift in Sources */,
 				39E2222E60526A97E317AD55 /* AgenticRewriter.swift in Sources */,
 				12CA8821B2338734F4D53111 /* AnthropicClient.swift in Sources */,
 				B83E6B95C5254DF980621B9C /* AppDelegate.swift in Sources */,

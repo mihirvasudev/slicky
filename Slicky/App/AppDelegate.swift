@@ -64,15 +64,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         guard let hud = hudController, !hud.isVisible else { return }
 
-        // Auto strategy synthesises Cmd+C and needs the modifiers released first
-        // so the target app sees a clean ⌘C. Other strategies fire immediately.
-        if settings.captureStrategy == .auto {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
-                self?.captureAndShowHUD()
-            }
-        } else {
-            captureAndShowHUD()
-        }
+        // SyntheticCopy waits for modifiers to release internally, so we don't
+        // need a blanket delay here. Capture eagerly.
+        captureAndShowHUD()
     }
 
     @MainActor

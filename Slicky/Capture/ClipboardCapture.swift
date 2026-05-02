@@ -4,10 +4,24 @@ import AppKit
 /// app activation. This is the rock-solid Clippy-style path: when the user
 /// presses Cmd+C themselves, *their* app handles the copy and we just read it.
 struct ClipboardReader {
+    /// Anything copied within this window counts as "fresh" — we trust the user
+    /// just put it there intentionally and use it without trying synthetic copy.
+    static let freshnessWindow: TimeInterval = 60
+
     struct Result {
         let text: String
-        let isStale: Bool   // true if pasteboard hasn't changed in a while
+        let ageSeconds: TimeInterval?
         let ageDescription: String
+
+        var isFresh: Bool {
+            guard let ageSeconds else { return false }
+            return ageSeconds <= ClipboardReader.freshnessWindow
+        }
+
+        var isStale: Bool {
+            guard let ageSeconds else { return false }
+            return ageSeconds > 300
+        }
     }
 
     static func read() -> Result? {
@@ -16,13 +30,12 @@ struct ClipboardReader {
               !raw.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return nil
         }
-        let trackedAge = ClipboardChangeTracker.shared.ageOfCurrentChange()
-        let isStale = trackedAge.map { $0 > 300 } ?? false
-        let ageDescription = trackedAge.map { Self.formatAge($0) } ?? "unknown age"
-        return Result(text: raw, isStale: isStale, ageDescription: ageDescription)
+        let age = ClipboardChangeTracker.shared.ageOfCurrentChange()
+        let ageDescription = age.map { Self.formatAge($0) } ?? "unknown age"
+        return Result(text: raw, ageSeconds: age, ageDescription: ageDescription)
     }
 
-    private static func formatAge(_ seconds: TimeInterval) -> String {
+    static func formatAge(_ seconds: TimeInterval) -> String {
         if seconds < 5 { return "just now" }
         if seconds < 60 { return "\(Int(seconds))s ago" }
         let minutes = Int(seconds / 60)
@@ -87,42 +100,63 @@ final class SyntheticCopy {
             return nil
         }
 
+        // AX menu copy is the most reliable mechanism in Electron apps. We
+        // do NOT need modifiers to be released for this path because we're
+        // dispatching a menu action, not synthesizing a keyboard event.
+        let snapshot = PasteboardSnapshot(pasteboard)
+        if let app = originalApp, tryCopy(via: { AXMenuCopy.performCopy(in: app) }, label: "AX Edit→Copy", pasteboard: pasteboard, snapshot: snapshot) {
+            if let text = pasteboard.string(forType: .string), !text.isEmpty {
+                let captured = text
+                snapshot.restore(to: pasteboard)
+                return captured
+            }
+        }
+
+        // Synthetic keyboard events DO require modifiers to be released.
         guard waitForHotkeyModifiersToRelease(timeout: 1.2) else {
-            lastFailureReason = "The hotkey modifiers were still held down when Slicky tried to send Cmd+C, so the target app saw a different shortcut. Release the hotkey faster after pressing it."
+            lastFailureReason = "AX Edit→Copy didn't return text, and the hotkey modifiers are still held down so synthetic ⌘C would be misinterpreted. Release the hotkey faster after pressing it, or copy manually first."
+            snapshot.restore(to: pasteboard)
             return nil
         }
 
-        let snapshot = PasteboardSnapshot(pasteboard)
-
-        let copyAttempts: [(String, () -> Void)] = [
-            ("CGEvent Cmd+C", simulateCopy),
-            ("System Events Cmd+C", simulateCopyWithSystemEvents),
-            ("CGEvent Cmd+C retry", simulateCopy)
+        let kbAttempts: [(String, () -> Void)] = [
+            ("CGEvent ⌘C", simulateCopy),
+            ("System Events ⌘C", simulateCopyWithSystemEvents),
+            ("CGEvent ⌘C retry", simulateCopy)
         ]
-
-        for (label, copy) in copyAttempts {
-            pasteboard.clearContents()
-            let changeCountBefore = pasteboard.changeCount
-            copy()
-
-            guard waitForPasteboardChange(pasteboard, from: changeCountBefore, timeout: 1.2) else {
-                continue
+        for (label, copy) in kbAttempts {
+            if tryCopy(via: { copy(); return true }, label: label, pasteboard: pasteboard, snapshot: snapshot) {
+                if let text = pasteboard.string(forType: .string), !text.isEmpty {
+                    let captured = text
+                    snapshot.restore(to: pasteboard)
+                    return captured
+                }
             }
-
-            let captured = pasteboard.string(forType: .string)
-            guard let text = captured, !text.isEmpty else {
-                snapshot.restore(to: pasteboard)
-                lastFailureReason = "\(label) changed the clipboard, but it didn't contain plain text."
-                return nil
-            }
-
-            snapshot.restore(to: pasteboard)
-            return text
         }
 
         snapshot.restore(to: pasteboard)
-        lastFailureReason = "Auto-copy tried CGEvent and System Events Cmd+C, but the clipboard never changed. The app may not have keyboard focus, or no text was selected."
+        if lastFailureReason.isEmpty {
+            lastFailureReason = "Tried AX Edit→Copy, CGEvent ⌘C, and System Events ⌘C — none of them changed the clipboard. The app may not have keyboard focus, or no text was selected."
+        }
         return nil
+    }
+
+    /// Runs the given copy mechanism, snapshots/clears clipboard, and waits
+    /// for the pasteboard to change. Returns true if the clipboard moved —
+    /// caller is responsible for reading `pasteboard.string(forType:)`.
+    private func tryCopy(via copy: () -> Bool, label: String, pasteboard: NSPasteboard, snapshot: PasteboardSnapshot) -> Bool {
+        pasteboard.clearContents()
+        let changeCountBefore = pasteboard.changeCount
+        let dispatched = copy()
+        if !dispatched {
+            // The copy mechanism itself reported failure (e.g. no Edit menu).
+            return false
+        }
+        let changed = waitForPasteboardChange(pasteboard, from: changeCountBefore, timeout: 1.2)
+        if !changed {
+            lastFailureReason = "\(label) didn't change the clipboard."
+        }
+        return changed
     }
 
     private func simulateCopy() {

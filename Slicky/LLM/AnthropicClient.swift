@@ -9,7 +9,9 @@ final class AnthropicClient {
 
     // MARK: - Streaming
 
-    /// Streams text tokens from the Anthropic Messages API.
+    /// Streams text tokens from the Anthropic Messages API. Throws when the
+    /// model returned no tokens, finished with a problematic stop_reason, or
+    /// the SSE stream emitted an explicit error event.
     func stream(
         systemPrompt: String,
         userMessage: String,
@@ -37,6 +39,7 @@ final class AnthropicClient {
                     if httpResponse.statusCode != 200 {
                         var body = ""
                         for try await line in bytes.lines { body += line }
+                        NSLog("Slicky Anthropic %d: %@", httpResponse.statusCode, body)
                         if let data = body.data(using: .utf8),
                            let apiError = try? JSONDecoder().decode(AnthropicError.self, from: data) {
                             throw apiError
@@ -45,10 +48,31 @@ final class AnthropicClient {
                     }
 
                     var parser = SSEParser()
+                    var totalChars = 0
+                    var stopReason: String?
                     for try await line in bytes.lines {
-                        if let token = parser.processLine(line) {
+                        switch parser.processLine(line) {
+                        case .textDelta(let token):
+                            totalChars += token.count
                             continuation.yield(token)
+                        case .stopReason(let reason):
+                            stopReason = reason
+                        case .errorPayload(let message):
+                            NSLog("Slicky stream error event: %@", message)
+                            throw AnthropicStreamError(kind: .apiError, message: message)
+                        case .ignore:
+                            break
                         }
+                    }
+
+                    if totalChars == 0 {
+                        let detail = stopReason.map { "stop_reason=\($0)" } ?? "no tokens received"
+                        NSLog("Slicky empty stream: %@ (model=%@)", detail, model)
+                        throw AnthropicStreamError(kind: .noContent, message: detail)
+                    }
+                    if let reason = stopReason, reason != "end_turn" && reason != "stop_sequence" {
+                        NSLog("Slicky early stop: %@ (chars=%d)", reason, totalChars)
+                        // Don't throw on partial — caller decides whether to use the partial draft.
                     }
                     continuation.finish()
                 } catch {
@@ -88,6 +112,8 @@ final class AnthropicClient {
         let (data, response) = try await URLSession.shared.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+            let body = String(data: data, encoding: .utf8) ?? "(non-utf8)"
+            NSLog("Slicky Anthropic complete %d: %@", (response as? HTTPURLResponse)?.statusCode ?? -1, body)
             if let apiError = try? JSONDecoder().decode(AnthropicError.self, from: data) {
                 throw apiError
             }

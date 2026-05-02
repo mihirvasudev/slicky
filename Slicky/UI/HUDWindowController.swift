@@ -24,6 +24,8 @@ final class HUDWindowController {
             viewModel: vm,
             originalText: context.selectedText,
             captureSource: context.source,
+            captureSourceDisplay: context.sourceDisplay,
+            warnStaleClipboard: context.warnStaleClipboard,
             onAccept: { [weak self] in self?.acceptRewrite() },
             onCancel: { [weak self] in self?.dismiss() }
         )

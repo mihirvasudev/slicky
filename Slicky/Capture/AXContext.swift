@@ -19,13 +19,20 @@ struct CapturedContext {
     let focusedElement: AXUIElement?
     let originalApp: NSRunningApplication?
     let source: CaptureSource
+    /// Only populated when `source == .clipboardLive`; "12s ago", "5m ago", etc.
+    let clipboardAgeDescription: String?
+    /// True when we used clipboard text that hadn't been updated recently and
+    /// synthetic copy *also* failed. The HUD warns the user prominently.
+    let warnStaleClipboard: Bool
 
     /// Convenience: the live AX selection always represents the *current*
     /// cursor selection, while the clipboard might be older. Useful for HUD copy.
     var sourceDisplay: String {
         switch source {
         case .axSelection:    return "from selection"
-        case .clipboardLive:  return "from clipboard"
+        case .clipboardLive:
+            if let age = clipboardAgeDescription { return "from clipboard · \(age)" }
+            return "from clipboard"
         case .syntheticCopy:  return "auto-copied"
         }
     }
@@ -155,6 +162,7 @@ enum SlickyAXError: LocalizedError {
     case noFrontApp
     case permissionDenied
     case noTextAnywhere(appName: String, strategy: SlickySettings.CaptureStrategy, detail: String)
+    case syntheticCopyFailedStaleClipboard(appName: String, clipboardAge: String, detail: String)
 
     var errorDescription: String? {
         switch self {
@@ -164,15 +172,17 @@ enum SlickyAXError: LocalizedError {
             return "Accessibility permission not granted. Enable Slicky in System Settings › Privacy & Security › Accessibility."
         case .noTextAnywhere(let appName, let strategy, let detail):
             switch strategy {
-            case .smart:
-                let base = "I couldn't read selected text from \(appName), and your clipboard doesn't have any text either. In apps like Cursor, copy your prompt first (⌘C), then press the Slicky hotkey."
-                return detail.isEmpty ? base : "\(base) \(detail)"
-            case .auto:
-                let base = "I tried Accessibility, the existing clipboard, and a synthetic Cmd+C — none of them returned text from \(appName). Copy your text first (⌘C), then press the Slicky hotkey."
+            case .smart, .auto:
+                let base = "Slicky couldn't read selected text from \(appName), and there's nothing on your clipboard. Copy your prompt first (⌘C), then press the Slicky hotkey."
                 return detail.isEmpty ? base : "\(base) \(detail)"
             case .clipboardOnly:
                 return "Your clipboard doesn't have any plain text. Copy your prompt first (⌘C), then press the Slicky hotkey."
             }
+        case .syntheticCopyFailedStaleClipboard(let appName, let clipboardAge, let detail):
+            // We refuse to silently rewrite stale clipboard text — the user
+            // almost certainly meant their current selection.
+            let base = "Slicky couldn't read your selection in \(appName). Your clipboard text is from \(clipboardAge) — too old to assume you meant it. Copy your prompt freshly (⌘C), then press the Slicky hotkey again."
+            return detail.isEmpty ? base : "\(base) \(detail)"
         }
     }
 }

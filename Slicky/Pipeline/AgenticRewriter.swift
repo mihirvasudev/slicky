@@ -70,6 +70,16 @@ final class AgenticRewriter {
             continuation.finish()
             return
         }
+
+        // Hard bail when the draft is empty: critique-on-empty produces nonsense
+        // ("Score 1/10, draft is empty") and refine can't fix nothing — better
+        // to surface a real error so the user can edit and retry.
+        if draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            continuation.yield(.error(EmptyDraftError(originalPrompt: originalPrompt, model: settings.draftModel.displayName)))
+            continuation.finish()
+            return
+        }
+
         continuation.yield(.draftDone(draft))
 
         // Step 3: Critique (optional)
@@ -256,6 +266,19 @@ final class AgenticRewriter {
 
         Intent: \(intent.displayName)
         """
+    }
+}
+
+// MARK: - Errors
+
+struct EmptyDraftError: LocalizedError {
+    let originalPrompt: String
+    let model: String
+
+    var errorDescription: String? {
+        let preview = originalPrompt.trimmingCharacters(in: .whitespacesAndNewlines).prefix(120)
+        let snippet = preview.isEmpty ? "" : " (you sent: \"\(preview)…\")"
+        return "\(model) returned no text\(snippet). This usually means the input wasn't a prompt to rewrite (e.g. shell commands, code-only blocks, or content the model declined). Edit the original and try again, or pick a different model in Settings."
     }
 }
 

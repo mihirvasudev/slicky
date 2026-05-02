@@ -5,11 +5,27 @@ struct HUDView: View {
     @ObservedObject var viewModel: HUDViewModel
     let originalText: String
     let captureSource: CaptureSource
+    let captureSourceDisplay: String
+    let warnStaleClipboard: Bool
     let onAccept: () -> Void
     let onCancel: () -> Void
 
-    @State private var showOriginal = false
+    // Original is collapsed for AX selection (the user knows what they
+    // selected), but expanded for clipboard/synthetic so they can sanity-check
+    // it caught the right text before the LLM runs.
+    @State private var showOriginal: Bool
     @State private var showCritique = false
+
+    init(viewModel: HUDViewModel, originalText: String, captureSource: CaptureSource, captureSourceDisplay: String, warnStaleClipboard: Bool, onAccept: @escaping () -> Void, onCancel: @escaping () -> Void) {
+        self.viewModel = viewModel
+        self.originalText = originalText
+        self.captureSource = captureSource
+        self.captureSourceDisplay = captureSourceDisplay
+        self.warnStaleClipboard = warnStaleClipboard
+        self.onAccept = onAccept
+        self.onCancel = onCancel
+        self._showOriginal = State(initialValue: captureSource != .axSelection)
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -18,9 +34,13 @@ struct HUDView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     originalSection
-                    pipelineSection
-                    if viewModel.isDone || !viewModel.finalText.isEmpty {
-                        finalSection
+                    if viewModel.isFailed, let message = viewModel.errorMessage {
+                        failureSection(message: message)
+                    } else {
+                        pipelineSection
+                        if viewModel.isDone || !viewModel.finalText.isEmpty {
+                            finalSection
+                        }
                     }
                 }
                 .padding(20)
@@ -30,6 +50,33 @@ struct HUDView: View {
         }
         .frame(width: 620, height: 580)
         .background(Color(NSColor.windowBackgroundColor))
+    }
+
+    private func failureSection(message: String) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Image(systemName: "exclamationmark.octagon.fill")
+                    .foregroundColor(.red)
+                Text("Slicky couldn't finish the rewrite")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+            }
+            Text(message)
+                .font(.body)
+                .foregroundColor(.primary)
+                .fixedSize(horizontal: false, vertical: true)
+            Text("Press Esc to dismiss, then edit the original or try a different model in Settings.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(Color.red.opacity(0.08))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color.red.opacity(0.35), lineWidth: 1)
+        )
+        .cornerRadius(10)
     }
 
     // MARK: - Header
@@ -62,26 +109,20 @@ struct HUDView: View {
 
     private var captureSourceBadge: some View {
         let icon: String
-        let label: String
         switch captureSource {
-        case .axSelection:
-            icon = "text.cursor"
-            label = "from selection"
-        case .clipboardLive:
-            icon = "doc.on.clipboard"
-            label = "from clipboard"
-        case .syntheticCopy:
-            icon = "rectangle.on.rectangle.angled"
-            label = "auto-copied"
+        case .axSelection:    icon = "text.cursor"
+        case .clipboardLive:  icon = "doc.on.clipboard"
+        case .syntheticCopy:  icon = "rectangle.on.rectangle.angled"
         }
+        let isWarn = warnStaleClipboard
         return HStack(spacing: 4) {
-            Image(systemName: icon).font(.caption2)
-            Text(label).font(.caption)
+            Image(systemName: isWarn ? "exclamationmark.triangle.fill" : icon).font(.caption2)
+            Text(captureSourceDisplay).font(.caption)
         }
-        .foregroundColor(.secondary)
+        .foregroundColor(isWarn ? .orange : .secondary)
         .padding(.horizontal, 8)
         .padding(.vertical, 3)
-        .background(Color(NSColor.controlColor).opacity(0.6))
+        .background((isWarn ? Color.orange : Color(NSColor.controlColor)).opacity(isWarn ? 0.18 : 0.6))
         .cornerRadius(6)
     }
 
@@ -132,23 +173,40 @@ struct HUDView: View {
                 HStack {
                     Image(systemName: showOriginal ? "chevron.down" : "chevron.right")
                         .font(.caption2)
-                    Text("Original prompt")
+                    Text(originalSectionLabel)
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(captureSource == .axSelection ? .secondary : .accentColor)
                     Spacer()
+                    if captureSource != .axSelection {
+                        Text("Esc to cancel if this is wrong")
+                            .font(.caption2)
+                            .foregroundColor(Color.secondary.opacity(0.7))
+                    }
                 }
             }
             .buttonStyle(.plain)
 
             if showOriginal {
                 Text(originalText)
-                    .font(.system(size: 12))
-                    .foregroundColor(.secondary)
+                    .font(.system(size: 12, design: captureSource == .clipboardLive ? .monospaced : .default))
+                    .foregroundColor(.primary)
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(10)
                     .background(Color(NSColor.controlBackgroundColor))
                     .cornerRadius(8)
                     .transition(.opacity.combined(with: .move(edge: .top)))
             }
+        }
+    }
+
+    private var originalSectionLabel: String {
+        switch captureSource {
+        case .axSelection:    return "Original prompt"
+        case .clipboardLive:
+            let age = captureSourceDisplay.replacingOccurrences(of: "from clipboard · ", with: "")
+            return "Rewriting clipboard text (\(age)) — verify ↓"
+        case .syntheticCopy:  return "Rewriting auto-copied selection — verify ↓"
         }
     }
 
