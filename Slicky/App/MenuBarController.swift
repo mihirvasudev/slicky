@@ -4,6 +4,8 @@ final class MenuBarController: NSObject {
     private var statusItem: NSStatusItem
     private let settings: SlickySettings
     private let openSettingsCallback: () -> Void
+    private var hotkeyItem: NSMenuItem?
+    private var messageItem: NSMenuItem?
 
     init(settings: SlickySettings, openSettings: @escaping () -> Void) {
         self.settings = settings
@@ -19,7 +21,7 @@ final class MenuBarController: NSObject {
         let image = NSImage(systemSymbolName: "wand.and.stars", accessibilityDescription: "Slicky")
         image?.isTemplate = true
         button.image = image
-        button.toolTip = "Slicky — Select text + ⌘⇧K to rewrite"
+        button.toolTip = "Slicky — Select text + \(settings.hotkeyDisplayString) to rewrite"
     }
 
     private func configureMenu() {
@@ -30,9 +32,10 @@ final class MenuBarController: NSObject {
         menu.addItem(titleItem)
         menu.addItem(.separator())
 
-        let hotkeyItem = NSMenuItem(title: "Hotkey: ⌘⇧K", action: nil, keyEquivalent: "")
+        let hotkeyItem = NSMenuItem(title: "Hotkey: \(settings.hotkeyDisplayString)", action: nil, keyEquivalent: "")
         hotkeyItem.isEnabled = false
         menu.addItem(hotkeyItem)
+        self.hotkeyItem = hotkeyItem
         menu.addItem(.separator())
 
         let settingsItem = NSMenuItem(title: "Settings…", action: #selector(handleSettings), keyEquivalent: ",")
@@ -46,6 +49,11 @@ final class MenuBarController: NSObject {
         statusItem.menu = menu
     }
 
+    func refreshHotkey() {
+        hotkeyItem?.title = "Hotkey: \(settings.hotkeyDisplayString)"
+        statusItem.button?.toolTip = "Slicky — Select text + \(settings.hotkeyDisplayString) to rewrite"
+    }
+
     @objc private func handleSettings() {
         openSettingsCallback()
     }
@@ -54,8 +62,23 @@ final class MenuBarController: NSObject {
         guard let button = statusItem.button else { return }
         let originalImage = button.image
         button.image = NSImage(systemSymbolName: "exclamationmark.circle", accessibilityDescription: nil)
+        button.toolTip = message
+
+        if let existing = messageItem {
+            statusItem.menu?.removeItem(existing)
+        }
+        let item = NSMenuItem(title: "⚠ \(message)", action: nil, keyEquivalent: "")
+        item.isEnabled = false
+        statusItem.menu?.insertItem(item, at: min(2, statusItem.menu?.items.count ?? 0))
+        messageItem = item
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
             button.image = originalImage
+            self.refreshHotkey()
+            if let item = self.messageItem {
+                self.statusItem.menu?.removeItem(item)
+                self.messageItem = nil
+            }
         }
     }
 }

@@ -16,12 +16,7 @@ final class HotkeyManager {
     // MARK: - Mapping
 
     private func mapKey(_ code: HotKeyCode) -> Key {
-        switch code {
-        case .k: return .k
-        case .l: return .l
-        case .p: return .p
-        case .space: return .space
-        }
+        Key(carbonKeyCode: code.rawValue) ?? .k
     }
 
 }

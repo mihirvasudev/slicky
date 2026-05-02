@@ -2,14 +2,14 @@
 
 **Turn any sloppy prompt into a great one — anywhere on macOS.**
 
-Select text → press **⌘⇧K** → watch an agentic AI pipeline transform it into a structured, high-leverage prompt with goals, phases, tests, and acceptance criteria — then paste it back.
+Select text → press **⌘⌥K** → watch an agentic AI pipeline transform it into a structured, high-leverage prompt with goals, phases, tests, and acceptance criteria — then paste it back.
 
 Works in Cursor, Claude Code in Terminal, Codex CLI, claude.ai, ChatGPT, Slack, Notion, and anywhere you can select text.
 
 ## How it works
 
 1. **Select** your draft prompt in any app
-2. **Press ⌘⇧K**
+2. **Press ⌘⌥K** (or your custom hotkey)
 3. **Watch** the pipeline stream live:
    - **Classify** — detects intent (coding feature, bug fix, writing, research…)
    - **Draft** — applies a template tuned to your intent, streams the rewrite
@@ -23,13 +23,14 @@ Works in Cursor, Claude Code in Terminal, Codex CLI, claude.ai, ChatGPT, Slack, 
 2. Move Slicky to `/Applications`
 3. Open Slicky — it lives in your menu bar (wand icon ✦)
 4. Complete the onboarding: paste your [Anthropic API key](https://console.anthropic.com/settings/keys) and grant Accessibility permission
-5. Select any prompt text and press ⌘⇧K
+5. Select any prompt text and press ⌘⌥K
 
 ## Settings
 
 - **⌘,** or menu bar → Settings
 - Switch models (Sonnet for quality, Haiku for speed)
 - Toggle "Skip critique" for a faster 1-step rewrite
+- Rebind the global hotkey if it conflicts with another app
 - View Accessibility permission status
 
 ## Templates
@@ -72,6 +73,6 @@ xcodegen generate
 open Slicky.xcodeproj
 ```
 
-## Hotkey conflict with Slack
+## Hotkeys
 
-⌘⇧K is Slack's "Clear messages" shortcut. Either reassign Slack's shortcut in System Settings → Keyboard → Keyboard Shortcuts → App Shortcuts, or wait for Slicky v1.1 which adds hotkey rebinding.
+The default is **⌘⌥K**, chosen to avoid Cursor's **⌘⇧K** "Delete Line" shortcut and common Slack shortcuts. You can rebind it in Settings.

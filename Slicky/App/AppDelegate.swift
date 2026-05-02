@@ -39,6 +39,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func reregisterHotkey() {
         hotkeyManager?.unregister()
         registerHotkey()
+        menuBarController?.refreshHotkey()
     }
 
     @MainActor
@@ -48,10 +49,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         guard !KeychainManager.shared.apiKey.isEmpty else {
+            menuBarController?.showMessage("Add your Anthropic API key in Settings first.")
             openSettings()
             return
         }
         guard AXIsProcessTrusted() else {
+            menuBarController?.showMessage("Grant Accessibility permission in Settings first.")
             requestAccessibilityIfNeeded()
             return
         }

@@ -2,11 +2,13 @@ import SwiftUI
 import ApplicationServices
 
 struct OnboardingView: View {
-    let settings: SlickySettings
+    @ObservedObject var settings: SlickySettings
     let onComplete: () -> Void
 
     @State private var apiKey: String = ""
     @State private var step: Int = 0
+    @State private var axTrusted: Bool = AXIsProcessTrusted()
+    @State private var apiKeySaveError: String?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -27,6 +29,10 @@ struct OnboardingView: View {
             navigationButtons
         }
         .frame(width: 520, height: 460)
+        .onAppear {
+            apiKey = KeychainManager.shared.apiKey
+            axTrusted = AXIsProcessTrusted()
+        }
     }
 
     // MARK: - Header
@@ -60,7 +66,7 @@ struct OnboardingView: View {
                     .fontWeight(.semibold)
                     .multilineTextAlignment(.center)
 
-                Text("Select any text → press ⌘⇧K → watch Slicky rewrite it into a structured, high-leverage prompt with phases, tests, and acceptance criteria.")
+                Text("Select any text → press \(settings.hotkeyDisplayString) → watch Slicky rewrite it into a structured, high-leverage prompt with phases, tests, and acceptance criteria.")
                     .font(.body)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
@@ -112,6 +118,12 @@ struct OnboardingView: View {
                     .font(.caption)
                     .foregroundColor(.green)
             }
+
+            if let apiKeySaveError {
+                Label(apiKeySaveError, systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption)
+                    .foregroundColor(.red)
+            }
         }
         .padding(24)
     }
@@ -134,19 +146,27 @@ struct OnboardingView: View {
 
             VStack(spacing: 12) {
                 HStack(spacing: 8) {
-                    Image(systemName: AXIsProcessTrusted() ? "checkmark.circle.fill" : "circle")
-                        .foregroundColor(AXIsProcessTrusted() ? .green : .gray)
-                    Text(AXIsProcessTrusted() ? "Accessibility granted ✓" : "Not yet granted")
+                    Image(systemName: axTrusted ? "checkmark.circle.fill" : "circle")
+                        .foregroundColor(axTrusted ? .green : .gray)
+                    Text(axTrusted ? "Accessibility granted" : "Not yet granted")
                 }
                 .font(.body)
 
-                if !AXIsProcessTrusted() {
+                if !axTrusted {
                     Button("Open System Settings → Accessibility") {
                         let opts = ["AXTrustedCheckOptionPrompt": true] as CFDictionary
                         AXIsProcessTrustedWithOptions(opts)
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                            axTrusted = AXIsProcessTrusted()
+                        }
                     }
                     .controlSize(.large)
                 }
+
+                Button("Refresh Permission Status") {
+                    axTrusted = AXIsProcessTrusted()
+                }
+                .controlSize(.small)
 
                 Text("System Settings → Privacy & Security → Accessibility → toggle Slicky")
                     .font(.caption)
@@ -167,7 +187,7 @@ struct OnboardingView: View {
                 Text("You're ready!")
                     .font(.title2)
                     .fontWeight(.semibold)
-                Text("Slicky lives in your menu bar. Select any prompt text, press ⌘⇧K, and watch the magic.")
+                Text("Slicky lives in your menu bar. Select any prompt text, press \(settings.hotkeyDisplayString), and watch the magic.")
                     .font(.body)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
@@ -175,7 +195,7 @@ struct OnboardingView: View {
 
             VStack(alignment: .leading, spacing: 8) {
                 tipRow("Select your sloppy prompt text first", icon: "cursor.rays")
-                tipRow("Press ⌘⇧K (or your custom hotkey)", icon: "keyboard")
+                tipRow("Press \(settings.hotkeyDisplayString) (or your custom hotkey)", icon: "keyboard")
                 tipRow("Watch the pipeline — Draft → Critique → Refine", icon: "eyes")
                 tipRow("Press Return to paste, Tab to edit, Esc to cancel", icon: "return")
             }
@@ -196,20 +216,41 @@ struct OnboardingView: View {
             if step < 3 {
                 Button("Next") { advanceStep() }
                     .buttonStyle(.borderedProminent)
+                    .disabled(!canAdvance)
             } else {
                 Button("Start using Slicky") {
-                    if !apiKey.isEmpty { KeychainManager.shared.apiKey = apiKey }
+                    guard apiKey.isEmpty || KeychainManager.shared.saveAPIKey(apiKey) else {
+                        apiKeySaveError = "Could not save API key. Please try again."
+                        step = 1
+                        return
+                    }
                     onComplete()
                 }
                 .buttonStyle(.borderedProminent)
+                .disabled(!canFinish)
             }
         }
         .padding(20)
     }
 
+    private var canAdvance: Bool {
+        if step == 1 { return !apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        if step == 2 { return axTrusted }
+        return true
+    }
+
+    private var canFinish: Bool {
+        (!apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !KeychainManager.shared.apiKey.isEmpty)
+            && axTrusted
+    }
+
     private func advanceStep() {
         if step == 1 && !apiKey.isEmpty {
-            KeychainManager.shared.apiKey = apiKey
+            guard KeychainManager.shared.saveAPIKey(apiKey) else {
+                apiKeySaveError = "Could not save API key. Please try again."
+                return
+            }
+            apiKeySaveError = nil
         }
         step += 1
     }

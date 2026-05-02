@@ -53,9 +53,7 @@ final class TextInjector {
 
             // Restore original clipboard contents after the paste has landed
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                if !snapshot.isEmpty {
-                    snapshot.restore(to: pasteboard)
-                }
+                snapshot.restore(to: pasteboard)
             }
         }
     }

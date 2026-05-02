@@ -11,17 +11,21 @@ final class KeychainManager {
     var apiKey: String {
         get { load(account: accountKey) ?? "" }
         set {
-            if newValue.isEmpty {
-                delete(account: accountKey)
-            } else {
-                save(newValue, account: accountKey)
-            }
+            _ = saveAPIKey(newValue)
         }
+    }
+
+    @discardableResult
+    func saveAPIKey(_ value: String) -> Bool {
+        if value.isEmpty {
+            return delete(account: accountKey)
+        }
+        return save(value, account: accountKey)
     }
 
     // MARK: - Private
 
-    private func save(_ value: String, account: String) {
+    private func save(_ value: String, account: String) -> Bool {
         let data = Data(value.utf8)
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
@@ -34,8 +38,9 @@ final class KeychainManager {
         if status == errSecItemNotFound {
             var addQuery = query
             addQuery[kSecValueData as String] = data
-            SecItemAdd(addQuery as CFDictionary, nil)
+            return SecItemAdd(addQuery as CFDictionary, nil) == errSecSuccess
         }
+        return status == errSecSuccess
     }
 
     private func load(account: String) -> String? {
@@ -52,12 +57,13 @@ final class KeychainManager {
         return String(data: data, encoding: .utf8)
     }
 
-    private func delete(account: String) {
+    private func delete(account: String) -> Bool {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: account
         ]
-        SecItemDelete(query as CFDictionary)
+        let status = SecItemDelete(query as CFDictionary)
+        return status == errSecSuccess || status == errSecItemNotFound
     }
 }
