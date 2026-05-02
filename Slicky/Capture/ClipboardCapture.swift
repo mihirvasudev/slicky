@@ -6,9 +6,21 @@ final class ClipboardCapture {
     static let shared = ClipboardCapture()
     private init() {}
 
+    private(set) var lastFailureReason: String = ""
+
     /// Saves current clipboard, simulates Cmd+C to copy selection, reads result, restores clipboard.
-    func captureSelection() -> String? {
+    func captureSelection(from originalApp: NSRunningApplication?) -> String? {
         let pasteboard = NSPasteboard.general
+        lastFailureReason = ""
+
+        if let originalApp {
+            originalApp.activate(options: .activateIgnoringOtherApps)
+        }
+
+        guard waitForHotkeyModifiersToRelease(timeout: 1.2) else {
+            lastFailureReason = "The hotkey modifiers were still held down, so Cursor may not receive a plain Cmd+C copy command. Release the hotkey keys quickly after pressing it."
+            return nil
+        }
 
         // Snapshot the entire pasteboard before touching it
         let snapshot = PasteboardSnapshot(pasteboard)
@@ -20,6 +32,7 @@ final class ClipboardCapture {
 
         guard waitForPasteboardChange(pasteboard, from: changeCountBefore, timeout: 0.8) else {
             snapshot.restore(to: pasteboard)
+            lastFailureReason = "Clipboard fallback sent Cmd+C, but the clipboard did not change. The active app may have blocked copy, or no text was selected."
             return nil
         }
 
@@ -28,6 +41,7 @@ final class ClipboardCapture {
         guard let text = captured, !text.isEmpty else {
             // Nothing new captured — restore immediately
             snapshot.restore(to: pasteboard)
+            lastFailureReason = "Clipboard changed, but it did not contain plain text."
             return nil
         }
 
@@ -44,6 +58,22 @@ final class ClipboardCapture {
         let up = CGEvent(keyboardEventSource: src, virtualKey: 8, keyDown: false)
         up?.flags = .maskCommand
         up?.post(tap: .cgSessionEventTap)
+    }
+
+    private func waitForHotkeyModifiersToRelease(timeout: TimeInterval) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            let flags = CGEventSource.flagsState(.combinedSessionState)
+            let modifiersStillDown = flags.contains(.maskCommand)
+                || flags.contains(.maskAlternate)
+                || flags.contains(.maskControl)
+                || flags.contains(.maskShift)
+            if !modifiersStillDown {
+                return true
+            }
+            Thread.sleep(forTimeInterval: 0.02)
+        }
+        return false
     }
 
     private func waitForPasteboardChange(_ pasteboard: NSPasteboard, from changeCount: Int, timeout: TimeInterval) -> Bool {

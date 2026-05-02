@@ -39,7 +39,14 @@ final class AXContext {
 
         // Fallback: clipboard trick for Electron/Terminal apps
         if selectedText.isEmpty {
-            selectedText = ClipboardCapture.shared.captureSelection() ?? ""
+            selectedText = ClipboardCapture.shared.captureSelection(from: frontApp) ?? ""
+        }
+
+        if selectedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            throw SlickyAXError.noSelectedText(
+                appName: frontApp.localizedName ?? "the current app",
+                detail: ClipboardCapture.shared.lastFailureReason
+            )
         }
 
         // Surrounding text for context injection
@@ -129,11 +136,17 @@ final class AXContext {
 enum SlickyAXError: LocalizedError {
     case noFrontApp
     case permissionDenied
+    case noSelectedText(appName: String, detail: String)
 
     var errorDescription: String? {
         switch self {
         case .noFrontApp: return "No frontmost application found."
         case .permissionDenied: return "Accessibility permission not granted. Enable Slicky in System Settings › Privacy & Security › Accessibility."
+        case .noSelectedText(let appName, let detail):
+            if detail.isEmpty {
+                return "I couldn't read selected text from \(appName). Select text first, then press your Slicky hotkey."
+            }
+            return "I couldn't read selected text from \(appName). \(detail)"
         }
     }
 }
