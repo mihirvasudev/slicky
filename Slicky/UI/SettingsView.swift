@@ -110,14 +110,14 @@ struct SettingsView: View {
             HStack {
                 Text("Current hotkey")
                 Spacer()
-                Text("⌘⇧K")
+                Text("⌘⌥K")
                     .font(.system(.body, design: .monospaced))
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
                     .background(Color(NSColor.controlColor))
                     .cornerRadius(6)
             }
-            Text("Hotkey rebinding comes in v1.1. If ⌘⇧K conflicts with Slack, reassign Slack's shortcut in System Settings › Keyboard › App Shortcuts.")
+            Text("Hotkey rebinding comes in v1.1. ⌘⌥K avoids conflicts with Cursor (⌘⇧K = Delete Line) and most other apps.")
                 .font(.caption)
                 .foregroundColor(.secondary)
         }

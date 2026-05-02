@@ -27,7 +27,7 @@ final class SlickySettings: ObservableObject {
     @Published var onboardingComplete: Bool = false {
         didSet { defaults.set(onboardingComplete, forKey: "onboardingComplete") }
     }
-    @Published var hotkeyDisplayString: String = "⌘⇧K"
+    @Published var hotkeyDisplayString: String = "⌘⌥K"
 
     // These are persisted separately because UserDefaults can't store enums easily
     private let defaults = UserDefaults.standard
@@ -41,7 +41,7 @@ final class SlickySettings: ObservableObject {
     var hotkeyModifiers: NSEvent.ModifierFlags {
         get {
             let raw = defaults.integer(forKey: "hotkeyModifiers")
-            return raw == 0 ? [.command, .shift] : NSEvent.ModifierFlags(rawValue: UInt(raw))
+            return raw == 0 ? [.command, .option] : NSEvent.ModifierFlags(rawValue: UInt(raw))
         }
         set { defaults.set(Int(newValue.rawValue), forKey: "hotkeyModifiers") }
     }
