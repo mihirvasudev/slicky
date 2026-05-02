@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 
 final class MenuBarController: NSObject {
     private var statusItem: NSStatusItem
@@ -6,6 +7,8 @@ final class MenuBarController: NSObject {
     private let openSettingsCallback: () -> Void
     private var hotkeyItem: NSMenuItem?
     private var messageItem: NSMenuItem?
+    private var messagePopover: NSPopover?
+    private var messageDismissWorkItem: DispatchWorkItem?
 
     init(settings: SlickySettings, openSettings: @escaping () -> Void) {
         self.settings = settings
@@ -63,6 +66,7 @@ final class MenuBarController: NSObject {
         let originalImage = button.image
         button.image = NSImage(systemSymbolName: "exclamationmark.circle", accessibilityDescription: nil)
         button.toolTip = message
+        NSLog("Slicky: %@", message)
 
         if let existing = messageItem {
             statusItem.menu?.removeItem(existing)
@@ -72,6 +76,8 @@ final class MenuBarController: NSObject {
         statusItem.menu?.insertItem(item, at: min(2, statusItem.menu?.items.count ?? 0))
         messageItem = item
 
+        showMessagePopover(message, relativeTo: button)
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
             button.image = originalImage
             self.refreshHotkey()
@@ -80,5 +86,52 @@ final class MenuBarController: NSObject {
                 self.messageItem = nil
             }
         }
+    }
+
+    private func showMessagePopover(_ message: String, relativeTo button: NSStatusBarButton) {
+        messageDismissWorkItem?.cancel()
+        messagePopover?.close()
+
+        let popover = NSPopover()
+        popover.behavior = .transient
+        popover.contentSize = NSSize(width: 320, height: 122)
+        popover.contentViewController = NSHostingController(rootView: SlickyMessagePopover(message: message))
+        popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+        messagePopover = popover
+
+        let dismiss = DispatchWorkItem { [weak self, weak popover] in
+            popover?.close()
+            if self?.messagePopover === popover {
+                self?.messagePopover = nil
+            }
+        }
+        messageDismissWorkItem = dismiss
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5, execute: dismiss)
+    }
+}
+
+private struct SlickyMessagePopover: View {
+    let message: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Image(systemName: "exclamationmark.circle.fill")
+                    .foregroundColor(.orange)
+                Text("Slicky could not continue")
+                    .font(.headline)
+            }
+
+            Text(message)
+                .font(.body)
+                .foregroundColor(.primary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text("Tip: select text first, then use your Slicky hotkey. The error is also in the menu bar tooltip.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+        .padding(14)
+        .frame(width: 320, alignment: .leading)
     }
 }

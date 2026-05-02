@@ -180,6 +180,24 @@ struct SettingsView: View {
                     .controlSize(.small)
                 }
             }
+
+            HStack(spacing: 8) {
+                Button("Refresh Permission Status") {
+                    axTrusted = AXIsProcessTrusted()
+                }
+                .controlSize(.small)
+
+                Text(axTrusted ? "Ready" : "Slicky cannot read selected text until this is granted.")
+                    .font(.caption)
+                    .foregroundColor(axTrusted ? .green : .secondary)
+            }
+
+            if let path = Bundle.main.bundleURL.path.removingPercentEncoding {
+                Text("Running from: \(path)")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                    .lineLimit(2)
+            }
         }
     }
 

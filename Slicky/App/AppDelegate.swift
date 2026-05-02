@@ -60,10 +60,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         guard let hud = hudController, !hud.isVisible else { return }
 
+        // Give the system a beat to finish the global hotkey key-down event before
+        // AX/clipboard capture. This makes Cmd+C fallback more reliable in Electron apps.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { [weak self] in
+            self?.captureAndShowHUD()
+        }
+    }
+
+    @MainActor
+    private func captureAndShowHUD() {
+        guard let hud = hudController, !hud.isVisible else { return }
+
         do {
             let context = try AXContext.shared.captureContext()
             guard !context.selectedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-                menuBarController?.showMessage("Select some text first, then press the hotkey.")
+                let appName = context.appName.isEmpty ? "the current app" : context.appName
+                menuBarController?.showMessage("I couldn't read selected text from \(appName). Select text first; if it still fails, try the same text in TextEdit to isolate the app.")
                 return
             }
             hud.show(context: context)
