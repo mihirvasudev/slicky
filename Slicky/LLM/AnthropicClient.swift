@@ -82,6 +82,66 @@ final class AnthropicClient {
         }
     }
 
+    // MARK: - API key probe
+
+    enum ProbeResult {
+        case ok(model: String, sample: String)
+        case unauthorized(message: String)
+        case modelNotFound(message: String)
+        case other(status: Int, message: String)
+        case transport(Error)
+    }
+
+    /// Sends a tiny non-streaming request to verify (a) the API key is valid
+    /// and (b) the model ID actually exists. Used by Settings → Test API Key.
+    func probe(model: String, apiKey: String) async -> ProbeResult {
+        do {
+            var request = URLRequest(url: baseURL)
+            request.httpMethod = "POST"
+            request.setValue(apiKey, forHTTPHeaderField: "x-api-key")
+            request.setValue(apiVersion, forHTTPHeaderField: "anthropic-version")
+            request.setValue("application/json", forHTTPHeaderField: "content-type")
+            request.timeoutInterval = 30
+
+            let body = AnthropicRequest(
+                model: model,
+                messages: [.init(role: "user", content: "Reply with just the word: ok")],
+                system: nil,
+                maxTokens: 10,
+                stream: false
+            )
+            request.httpBody = try JSONEncoder().encode(body)
+
+            let (data, response) = try await URLSession.shared.data(for: request)
+            let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+            let bodyString = String(data: data, encoding: .utf8) ?? "(non-utf8)"
+            NSLog("Slicky probe %d: %@", status, bodyString)
+
+            if status == 200 {
+                struct R: Decodable {
+                    let content: [Block]
+                    struct Block: Decodable { let type: String; let text: String? }
+                }
+                let parsed = try JSONDecoder().decode(R.self, from: data)
+                let text = parsed.content.compactMap { $0.text }.joined()
+                return .ok(model: model, sample: text.trimmingCharacters(in: .whitespacesAndNewlines))
+            }
+
+            let apiError = (try? JSONDecoder().decode(AnthropicError.self, from: data))
+            let message = apiError?.error.message ?? bodyString
+            switch status {
+            case 401:
+                return .unauthorized(message: message)
+            case 404:
+                return .modelNotFound(message: message)
+            default:
+                return .other(status: status, message: message)
+            }
+        } catch {
+            return .transport(error)
+        }
+    }
+
     // MARK: - Non-streaming (for classify + critique)
 
     func complete(

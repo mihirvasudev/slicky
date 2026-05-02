@@ -13,6 +13,14 @@ struct SettingsView: View {
     @State private var hotkeyStatusMessage: String?
     @State private var apiKeySaveError: String?
     @State private var diagnosticReport: CaptureCoordinator.DiagnosticReport?
+    @State private var probeStatus: ProbeStatus = .idle
+
+    enum ProbeStatus {
+        case idle
+        case running
+        case success(String)
+        case failure(String)
+    }
 
     var body: some View {
         ScrollView {
@@ -91,7 +99,55 @@ struct SettingsView: View {
                     .font(.caption)
                     .foregroundColor(.red)
             }
+
+            HStack(spacing: 8) {
+                Button {
+                    probeAPIKey()
+                } label: {
+                    HStack(spacing: 6) {
+                        if case .running = probeStatus {
+                            ProgressView().scaleEffect(0.5)
+                        } else {
+                            Image(systemName: "checkmark.shield")
+                        }
+                        Text("Test API Key + Model")
+                    }
+                }
+                .buttonStyle(.bordered)
+                .disabled(apiKeyInput.isEmpty || isProbing)
+
+                probeStatusLabel
+            }
         }
+    }
+
+    @ViewBuilder
+    private var probeStatusLabel: some View {
+        switch probeStatus {
+        case .idle:
+            EmptyView()
+        case .running:
+            Text("Pinging Anthropic…")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        case .success(let detail):
+            Label(detail, systemImage: "checkmark.circle.fill")
+                .font(.caption)
+                .foregroundColor(.green)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+        case .failure(let detail):
+            Label(detail, systemImage: "xmark.octagon.fill")
+                .font(.caption)
+                .foregroundColor(.red)
+                .lineLimit(3)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var isProbing: Bool {
+        if case .running = probeStatus { return true }
+        return false
     }
 
     private var modelSection: some View {
@@ -332,6 +388,35 @@ struct SettingsView: View {
         withAnimation { savedFlash = true }
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             withAnimation { savedFlash = false }
+        }
+    }
+
+    private func probeAPIKey() {
+        // Use the freshly-typed key if present, otherwise the persisted one.
+        let key = apiKeyInput.isEmpty ? KeychainManager.shared.apiKey : apiKeyInput
+        guard !key.isEmpty else {
+            probeStatus = .failure("Enter an API key first.")
+            return
+        }
+        probeStatus = .running
+        let model = settings.draftModel.rawValue
+        Task {
+            let result = await AnthropicClient.shared.probe(model: model, apiKey: key)
+            await MainActor.run {
+                switch result {
+                case .ok(let m, let sample):
+                    let preview = sample.isEmpty ? "(empty reply)" : sample
+                    probeStatus = .success("\(m) replied: \(preview)")
+                case .unauthorized(let msg):
+                    probeStatus = .failure("API key rejected (401). \(msg)")
+                case .modelNotFound(let msg):
+                    probeStatus = .failure("Model \(model) not found (404). Pick a different model above. \(msg)")
+                case .other(let status, let msg):
+                    probeStatus = .failure("HTTP \(status): \(msg)")
+                case .transport(let err):
+                    probeStatus = .failure("Network error: \(err.localizedDescription)")
+                }
+            }
         }
     }
 

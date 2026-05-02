@@ -8,16 +8,19 @@ final class SlickySettings: ObservableObject {
     // MARK: - Models
 
     enum DraftModel: String, CaseIterable, Identifiable {
-        case sonnet = "claude-sonnet-4-5"
-        case haiku = "claude-haiku-4-5"
-        case opus = "claude-opus-4-5"
+        // Real Anthropic API model IDs (verified May 2026).
+        // The previous build shipped with `claude-sonnet-4-5` / `claude-opus-4-5`
+        // which never existed and caused empty-stream errors.
+        case sonnet = "claude-sonnet-4-6"
+        case haiku  = "claude-haiku-4-5"
+        case opus   = "claude-opus-4-7"
 
         var id: String { rawValue }
         var displayName: String {
             switch self {
-            case .sonnet: return "Claude Sonnet (balanced)"
-            case .haiku: return "Claude Haiku (fast)"
-            case .opus: return "Claude Opus (best quality)"
+            case .sonnet: return "Claude Sonnet 4.6 (balanced)"
+            case .haiku:  return "Claude Haiku 4.5 (fast)"
+            case .opus:   return "Claude Opus 4.7 (best quality)"
             }
         }
     }

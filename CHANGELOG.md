@@ -28,7 +28,11 @@
 - Menu bar error popovers now stay visible 8s (was 5s) so long error messages can be read.
 
 ### Fixed
+- **Wrong model IDs**: shipped with `claude-sonnet-4-5` and `claude-opus-4-5`, neither of which exist. Updated to real Anthropic model IDs (`claude-sonnet-4-6`, `claude-haiku-4-5`, `claude-opus-4-7`). Old persisted settings auto-migrate to the new defaults.
 - **Empty-rewrite bug**: SSE parser was defaulting unknown event types to `content_block_delta`, silently swallowing `error` events and `stop_reason` payloads. The rewriter now surfaces real Anthropic errors (overloaded, content_filtered, refused) instead of producing a blank prompt with a "Score 1/10, draft is empty" critique.
 - **Empty draft detection**: when the model returns zero tokens (e.g. shell-script content the model declined to rewrite), the HUD shows a clear actionable error instead of running critique-on-nothing.
 - **Stale clipboard hijacking**: previously, if you pressed the hotkey in Cursor without copying first, Slicky silently rewrote whatever was last on your clipboard from minutes earlier. It now fails fast with a message naming the stale clipboard's age.
 - API errors now NSLog to Console.app for debugging.
+
+### Added (this build)
+- **Test API Key + Model** button in Settings: sends a 1-token probe to Anthropic and reports success/401/404/error inline. No more guessing whether the key, the model ID, or the network is the problem.
