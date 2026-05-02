@@ -29,7 +29,7 @@ final class AXContext {
         // Get focused UI element
         var focusedRef: CFTypeRef?
         let focusedOK = AXUIElementCopyAttributeValue(axApp, kAXFocusedUIElementAttribute as CFString, &focusedRef).rawValue == 0
-        let focusedElement: AXUIElement? = focusedOK ? (focusedRef as? AXUIElement) : nil
+        let focusedElement: AXUIElement? = focusedOK ? axElement(from: focusedRef) : nil
 
         // Try to get selected text from the focused element
         var selectedText = ""
@@ -52,7 +52,7 @@ final class AXContext {
         var windowTitle = ""
         var windowRef: CFTypeRef?
         if AXUIElementCopyAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, &windowRef).rawValue == 0,
-           let window = windowRef as? AXUIElement {
+           let window = axElement(from: windowRef) {
             var titleRef: CFTypeRef?
             if AXUIElementCopyAttributeValue(window, kAXTitleAttribute as CFString, &titleRef).rawValue == 0 {
                 windowTitle = (titleRef as? String) ?? ""
@@ -71,6 +71,13 @@ final class AXContext {
     }
 
     // MARK: - Private
+
+    private func axElement(from value: CFTypeRef?) -> AXUIElement? {
+        guard let value, CFGetTypeID(value) == AXUIElementGetTypeID() else {
+            return nil
+        }
+        return unsafeBitCast(value, to: AXUIElement.self)
+    }
 
     private func readSelectedText(from element: AXUIElement) -> String {
         var ref: CFTypeRef?
